@@ -13,6 +13,7 @@ const ACCOUNT_TYPE = Object.freeze({
 
 const CONTRACT_TEMPLATE_STATUSES = Object.freeze({
   DRAFT: "Draft",
+  PENDING: "Pending",
   APPROVED: "Approved",
   REJECTED: "Rejected",
 });

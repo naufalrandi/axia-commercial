@@ -461,6 +461,27 @@ async function getPendingReviewsByUser(userId = null) {
   });
 }
 
+async function getContractVariant(id) {
+  if (!id) return null;
+  return await modelMasterdata.ContractVariant.findByPk(id, {
+    attributes: { exclude: ["description", "createdAt", "updatedAt"] },
+    include: [
+      {
+        model: modelMasterdata.ContractSubcategory,
+        attributes: { exclude: ["description", "createdAt", "updatedAt"] },
+        as: "contractSubcategory",
+        include: [
+          {
+            model: modelMasterdata.ContractCategory,
+            attributes: { exclude: ["description", "createdAt", "updatedAt"] },
+            as: "contractCategory",
+          },
+        ],
+      },
+    ],
+  });
+}
+
 module.exports = {
   generateToken,
   generateRefreshToken,
@@ -493,4 +514,5 @@ module.exports = {
   getReviewStatistics,
   assignReviewToUser,
   getPendingReviewsByUser,
+  getContractVariant,
 };

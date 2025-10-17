@@ -82,6 +82,22 @@ const destroyMany = async (req, res, next) => {
   }
 };
 
+const submit = async (req, res, next) => {
+  try {
+    const data = {
+      ...req.body,
+      approverId: req.user?.userId || 1,
+    };
+    const result = await contractTemplateService.submit(req.params.id, data);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const approve = async (req, res, next) => {
   try {
     const data = {
@@ -114,39 +130,6 @@ const reject = async (req, res, next) => {
   }
 };
 
-const submitForReview = async (req, res, next) => {
-  try {
-    const data = {
-      ...req.body,
-      userId: req.user?.userId || 1, // Should come from auth middleware
-    };
-    const result = await contractTemplateService.submitForReview(
-      req.params.id,
-      data
-    );
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const getReviews = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const result = await contractTemplateService.getReviews(id);
-
-    res.status(200).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 module.exports = {
   getAll,
   create,
@@ -154,8 +137,7 @@ module.exports = {
   update,
   destroy,
   destroyMany,
+  submit,
   approve,
   reject,
-  submitForReview,
-  getReviews,
 };

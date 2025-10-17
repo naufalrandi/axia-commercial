@@ -13,12 +13,9 @@ mainRoutes.delete("/contract-templates/:id", authMiddleware, contractTemplateCon
 mainRoutes.delete("/contract-templates", authMiddleware, contractTemplateController.destroyMany);
 
 // Contract Template Workflow Actions
+mainRoutes.put("/contract-templates/:id/submit", authMiddleware, contractTemplateController.submit);
 mainRoutes.put("/contract-templates/:id/approve", authMiddleware, contractTemplateController.approve);
 mainRoutes.put("/contract-templates/:id/reject", authMiddleware, contractTemplateController.reject);
-mainRoutes.put("/contract-templates/:id/submit-for-review", authMiddleware, contractTemplateController.submitForReview);
-
-// Contract Template Reviews
-mainRoutes.get("/contract-templates/:id/reviews", authMiddleware, contractTemplateController.getReviews);
 
 // Document Reviews - Compliance Module
 mainRoutes.get("/document-reviews", authMiddleware, documentReviewController.getAll);

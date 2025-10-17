@@ -3,12 +3,11 @@ const {
   searchData,
   pagination,
   getDataById,
-  checkUniqueness,
   updateWithHistory,
   createContractHistoryEntry,
-  checkStatus,
   generateContractTemplateCode,
   getUser,
+  getContractVariant,
 } = require("../../helpers/func");
 const { Op, sequelize } = require("sequelize");
 const db = require("../../models/index");
@@ -24,11 +23,28 @@ const { asArray, CONTRACT_TEMPLATE_STATUSES } = require("../../enum/utils");
 const documentReviewService = require("./document-review-service");
 
 const getData = async (id) => {
-  return await getDataById(
+  const contractTemplate = await getDataById(
     "ContractTemplate",
     id,
     "Contract template not found"
   );
+
+  contractTemplate.contractVariant = await getContractVariant(
+    contractTemplate.contractVariantId
+  );
+
+  const reviewers = await model.DocumentReview.findAll({
+    where: {
+      reviewableType: "ContractTemplate",
+      reviewableId: id,
+    },
+    order: [["createdAt", "ASC"]],
+  });
+
+  contractTemplate.approver = await getUser(contractTemplate.approverId);
+  contractTemplate.reviewers = reviewers;
+
+  return contractTemplate;
 };
 
 const getAll = async (data) => {
@@ -39,28 +55,24 @@ const getAll = async (data) => {
     where: {
       ...fieldSearch,
     },
-    include: [
-      // Uncomment when related models are available
-      // {
-      //   model: model.ContractVariant,
-      //   as: 'contractVariant',
-      //   attributes: ['id', 'name']
-      // },
-      // {
-      //   model: model.User,
-      //   as: 'approver',
-      //   attributes: ['id', 'name', 'email']
-      // },
-      // {
-      //   model: model.User,
-      //   as: 'createdBy',
-      //   attributes: ['id', 'name', 'email']
-      // }
-    ],
     limit,
     offset,
     order: [[sortBy, orderby]],
+    attributes: { exclude: ["histories"] },
   });
+
+  result.rows = await Promise.all(
+    result.rows.map(async (template) => {
+      const contractVariant = await getContractVariant(
+        template.contractVariantId
+      );
+
+      return {
+        ...template.toJSON(),
+        contractVariant,
+      };
+    })
+  );
 
   return pagination(result, page, limit);
 };
@@ -80,9 +92,7 @@ const create = async (data) => {
     ),
   ];
 
-  // Use transaction for atomic operations
   const transaction = await db.sequelize.transaction();
-
   try {
     const existingData = await model.ContractTemplate.findOne({
       where: { code: data.code },
@@ -93,15 +103,12 @@ const create = async (data) => {
       throw new Error("Contract template with this category already exists");
     }
 
-    // Extract reviewers before creating contract template
     const reviewers = data.reviewers;
-    delete data.reviewers; // Remove reviewers from data before creating contract template
-
+    delete data.reviewers;
     const contractTemplate = await model.ContractTemplate.create(data, {
       transaction,
     });
 
-    // Create reviews for assigned reviewers if any
     if (reviewers && reviewers.length > 0) {
       await documentReviewService.createBulkReviews(
         "ContractTemplate",
@@ -111,33 +118,16 @@ const create = async (data) => {
       );
     }
 
-    // Commit transaction if everything is successful
     await transaction.commit();
     return contractTemplate;
   } catch (error) {
-    // Rollback transaction if any error occurs
     await transaction.rollback();
     throw error;
   }
 };
 
 const getOne = async (id) => {
-  const contractTemplate = await getData(id);
-
-  // Get reviewers data for this contract template
-  const reviewers = await model.DocumentReview.findAll({
-    where: {
-      reviewableType: "ContractTemplate",
-      reviewableId: id,
-    },
-    order: [["createdAt", "ASC"]],
-  });
-
-  // Add reviewers to contract template data
-  const result = contractTemplate;
-  result.reviewers = reviewers;
-
-  return result;
+  return await getData(id);
 };
 
 const update = async (id, data) => {
@@ -173,11 +163,59 @@ const destroyMany = async (data) => {
   });
 };
 
+const submit = async (id, submitData) => {
+  const data = { id, ...submitData };
+  validate(approveValidation, data);
+  const existingTemplate = await getData(id);
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.PENDING) {
+    throw new Error(`Contract template has already been submitted`);
+  }
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.APPROVED) {
+    throw new Error(`Contract template has been approved`);
+  }
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.REJECTED) {
+    throw new Error(`Contract template has been rejected`);
+  }
+
+  const updateData = {
+    status: CONTRACT_TEMPLATE_STATUSES.PENDING,
+  };
+
+  const historyEntry = createContractHistoryEntry(
+    "submitted",
+    data.userId || 1,
+    "Superadmin",
+    data.reason || "Contract template submitted"
+  );
+
+  return await updateWithHistory(
+    "ContractTemplate",
+    id,
+    updateData,
+    historyEntry
+  );
+};
+
 const approve = async (id, approverData) => {
   const data = { id, ...approverData };
   validate(approveValidation, data);
-
   const existingTemplate = await getData(id);
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.DRAFT) {
+    throw new Error(`Contract template is still in draft status`);
+  }
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.APPROVED) {
+    throw new Error(`Contract template has been approved`);
+  }
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.REJECTED) {
+    throw new Error(`Contract template has been rejected`);
+  }
+
   const updateData = {
     status: CONTRACT_TEMPLATE_STATUSES.APPROVED,
     approvedAt: new Date(),
@@ -203,11 +241,18 @@ const approve = async (id, approverData) => {
 const reject = async (id, rejectData) => {
   const data = { id, ...rejectData };
   validate(rejectValidation, data);
-
   const existingTemplate = await getData(id);
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.DRAFT) {
+    throw new Error(`Contract template is still in draft status`);
+  }
 
   if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.APPROVED) {
     throw new Error(`Contract template has been approved`);
+  }
+
+  if (existingTemplate.status === CONTRACT_TEMPLATE_STATUSES.REJECTED) {
+    throw new Error(`Contract template has been rejected`);
   }
 
   const updateData = {
@@ -232,80 +277,6 @@ const reject = async (id, rejectData) => {
   );
 };
 
-const submitForReview = async (id, reviewData) => {
-  const data = { id, ...reviewData };
-  validate(submitForReviewValidation, data);
-
-  const existingTemplate = await getData(id);
-  validateContractTemplateStatus(
-    existingTemplate.status,
-    CONTRACT_TEMPLATE_STATUSES.PENDING_REVIEW
-  );
-
-  const updateData = {
-    status: "pending_review",
-    reviewers: data.reviewers,
-  };
-
-  const historyEntry = createContractHistoryEntry(
-    "submitted_for_review",
-    data.userId || 1,
-    "System",
-    "Contract template submitted for review"
-  );
-
-  // Create DocumentReview records for each reviewer
-  if (data.reviewers && data.reviewers.length > 0) {
-    const reviewPromises = data.reviewers.map((reviewer) => {
-      return model.DocumentReview.create({
-        userId: reviewer.userId,
-        reviewableType: "ContractTemplate",
-        reviewableId: id,
-        status: "pending",
-        notes: reviewer.notes || "",
-      });
-    });
-
-    await Promise.all(reviewPromises);
-  }
-
-  return await updateWithHistory(
-    "ContractTemplate",
-    id,
-    updateData,
-    historyEntry
-  );
-};
-
-// Get reviews for a contract template
-const getReviews = async (id) => {
-  await getData(id); // Validate contract template exists
-
-  return await model.DocumentReview.findAll({
-    where: {
-      reviewableType: "ContractTemplate",
-      reviewableId: id,
-    },
-    order: [["createdAt", "ASC"]],
-  });
-};
-
-// Get review statistics for a contract template
-const getReviewStatistics = async (id) => {
-  await getData(id); // Validate contract template exists
-
-  const { getReviewStatistics } = require("../../helpers/func");
-  return await getReviewStatistics("ContractTemplate", id);
-};
-
-// Check if all reviews are completed for a contract template
-const areReviewsCompleted = async (id) => {
-  await getData(id); // Validate contract template exists
-
-  const { areAllReviewsCompleted } = require("../../helpers/func");
-  return await areAllReviewsCompleted("ContractTemplate", id);
-};
-
 module.exports = {
   getAll,
   create,
@@ -313,10 +284,7 @@ module.exports = {
   update,
   destroy,
   destroyMany,
+  submit,
   approve,
   reject,
-  submitForReview,
-  getReviews,
-  getReviewStatistics,
-  areReviewsCompleted,
 };
