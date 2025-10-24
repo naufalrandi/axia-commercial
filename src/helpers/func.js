@@ -482,6 +482,121 @@ async function getContractVariant(id) {
   });
 }
 
+async function generateLeadCode(transaction = null) {
+  const course = await model.Lead.findOne({
+    where: {
+      runningNumber: {
+        [Op.not]: null,
+      },
+    },
+    attributes: ["runningNumber"],
+    order: [["runningNumber", "DESC"]],
+    transaction,
+  });
+
+  const runNum = course ? course.runningNumber + 1 : 1;
+  return {
+    runningNumber: runNum,
+    code: `0080${runNum}`,
+  };
+}
+
+// Helper function to check if legal entity type exists in masterdata
+async function checkLegalEntityType(legalEntityTypeId) {
+  try {
+    const legalEntityType = await modelMasterdata.LegalEntityType.findByPk(
+      legalEntityTypeId
+    );
+    return !!legalEntityType;
+  } catch (error) {
+    console.error("Error checking legal entity type:", error);
+    return false;
+  }
+}
+
+// Helper function to check if IAF codes exist in masterdata
+async function checkIafCodes(iafCodes) {
+  try {
+    if (!iafCodes || !Array.isArray(iafCodes) || iafCodes.length === 0) {
+      return true; // IAF codes are optional
+    }
+
+    const iafCodeIds = iafCodes.map((iaf) => iaf.id);
+    const existingIafCodes = await modelMasterdata.IafCode.findAll({
+      where: {
+        id: {
+          [Op.in]: iafCodeIds,
+        },
+      },
+    });
+
+    // Check if all provided IAF codes exist
+    return existingIafCodes.length === iafCodeIds.length;
+  } catch (error) {
+    console.error("Error checking IAF codes:", error);
+    return false;
+  }
+}
+
+async function enrichAddressWithMasterdata(addressId, modelMasterdata) {
+  if (!addressId) return null;
+
+  const address = await modelAdminstrative.Address.findByPk(addressId);
+  if (!address) return null;
+
+  const promises = [];
+  if (address.countryId) {
+    promises.push(
+      modelMasterdata.Country.findByPk(address.countryId, {
+        attributes: ["id", "name"],
+      }).then((country) => ({ field: "country", data: country }))
+    );
+  }
+
+  if (address.provinceId) {
+    promises.push(
+      modelMasterdata.Province.findByPk(address.provinceId, {
+        attributes: ["id", "name"],
+      }).then((province) => ({ field: "province", data: province }))
+    );
+  }
+
+  if (address.cityId) {
+    promises.push(
+      modelMasterdata.City.findByPk(address.cityId, {
+        attributes: ["id", "name"],
+      }).then((city) => ({ field: "city", data: city }))
+    );
+  }
+
+  if (address.districtId) {
+    promises.push(
+      modelMasterdata.District.findByPk(address.districtId, {
+        attributes: ["id", "name"],
+      }).then((district) => ({ field: "district", data: district }))
+    );
+  }
+
+  if (address.villageId) {
+    promises.push(
+      modelMasterdata.Village.findByPk(address.villageId, {
+        attributes: ["id", "name"],
+      }).then((village) => ({ field: "village", data: village }))
+    );
+  }
+
+  if (promises.length > 0) {
+    const results = await Promise.all(promises);
+    results.forEach((result) => {
+      if (result.data) {
+        address.dataValues[result.field] = result.data;
+      }
+    });
+  }
+
+  return address;
+}
+
 module.exports = {
   generateToken,
   generateRefreshToken,
@@ -515,4 +630,8 @@ module.exports = {
   assignReviewToUser,
   getPendingReviewsByUser,
   getContractVariant,
+  generateLeadCode,
+  checkLegalEntityType,
+  checkIafCodes,
+  enrichAddressWithMasterdata,
 };

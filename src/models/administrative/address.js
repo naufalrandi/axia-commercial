@@ -3,82 +3,43 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Address extends Model {
     static associate(models) {
-      // Define associations with geographical models when they exist
-      // Uncomment and modify when the related models are created:
-      
-      // Address.belongsTo(models.Village, {
-      //   foreignKey: "villageId",
-      //   as: "village",
-      //   onDelete: "SET NULL",
-      // });
-
-      // Address.belongsTo(models.District, {
-      //   foreignKey: "districtId",
-      //   as: "district",
-      //   onDelete: "SET NULL",
-      // });
-
-      // Address.belongsTo(models.City, {
-      //   foreignKey: "cityId",
-      //   as: "city",
-      //   onDelete: "SET NULL",
-      // });
-
-      // Address.belongsTo(models.Country, {
-      //   foreignKey: "countryId",
-      //   as: "country",
-      //   onDelete: "SET NULL",
-      // });
-
-      // Define reverse associations with models that use Address
-      // Address.hasMany(models.UserDetail, {
-      //   foreignKey: "addressId",
-      //   as: "userDetailsWithAddress",
-      // });
-
-      // Address.hasMany(models.UserDetail, {
-      //   foreignKey: "currentAddressId",
-      //   as: "userDetailsWithCurrentAddress",
-      // });
-
-      // Address.hasMany(models.Company, {
-      //   foreignKey: "addressId",
-      //   as: "companies",
-      // });
+      //
     }
 
     // Instance method to get full address string
     getFullAddress() {
       const parts = [];
-      
+
       if (this.name) parts.push(this.name);
       if (this.addressLine) parts.push(this.addressLine);
-      
+
       // Add geographical information when available
       if (this.village && this.village.name) parts.push(this.village.name);
       if (this.district && this.district.name) parts.push(this.district.name);
       if (this.city && this.city.name) parts.push(this.city.name);
       if (this.country && this.country.name) parts.push(this.country.name);
-      
+
       if (this.postalCode) parts.push(this.postalCode);
-      
+
       return parts.join(", ");
     }
 
     // Static method to search addresses by location
     static async findByLocation(locationParams) {
       const where = {};
-      
+
       if (locationParams.countryId) where.countryId = locationParams.countryId;
       if (locationParams.cityId) where.cityId = locationParams.cityId;
-      if (locationParams.districtId) where.districtId = locationParams.districtId;
+      if (locationParams.districtId)
+        where.districtId = locationParams.districtId;
       if (locationParams.villageId) where.villageId = locationParams.villageId;
-      if (locationParams.postalCode) where.postalCode = locationParams.postalCode;
-      
+      if (locationParams.postalCode)
+        where.postalCode = locationParams.postalCode;
+
       return await this.findAll({ where });
     }
   }
-  
+
   Address.init(
     {
       villageId: {
@@ -135,9 +96,11 @@ module.exports = (sequelize, DataTypes) => {
           isPostalCode(value) {
             if (value) {
               // Basic postal code validation (alphanumeric with optional spaces/hyphens)
-              const cleanValue = value.replace(/[\s\-]/g, '');
+              const cleanValue = value.replace(/[\s\-]/g, "");
               if (!/^[A-Za-z0-9]{3,10}$/.test(cleanValue)) {
-                throw new Error('Postal code must be 3-10 alphanumeric characters');
+                throw new Error(
+                  "Postal code must be 3-10 alphanumeric characters"
+                );
               }
             }
           },
@@ -191,6 +154,6 @@ module.exports = (sequelize, DataTypes) => {
       },
     }
   );
-  
+
   return Address;
 };

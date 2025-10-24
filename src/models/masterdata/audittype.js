@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class EmploymentLevel extends Model {
+  class AuditType extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -13,13 +13,11 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  EmploymentLevel.init({
-    hierarchy: DataTypes.STRING,
-    level: DataTypes.INTEGER,
+  AuditType.init({
     name: DataTypes.STRING
   }, {
     sequelize,
-    modelName: 'EmploymentLevel',
+    modelName: 'AuditType',
   });
-  return EmploymentLevel;
+  return AuditType;
 };
