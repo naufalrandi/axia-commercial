@@ -84,6 +84,36 @@ const destroyMany = async (req, res, next) => {
   }
 };
 
+const syncBusinessProcess = async (req, res, next) => {
+  try {
+    const data = {
+      leadLocationId: parseInt(req.params.id),
+      businessProcessIds: req.body.businessProcessIds || [],
+    };
+    
+    const result = await leadLocationService.syncBusinessProcess(data);
+    res.status(200).json({
+      success: true,
+      message: "Business processes synchronized successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getBusinessProcesses = async (req, res, next) => {
+  try {
+    const result = await leadLocationService.getBusinessProcesses(req.params.id);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAll,
   create,
@@ -91,4 +121,6 @@ module.exports = {
   update,
   destroy,
   destroyMany,
+  syncBusinessProcess,
+  getBusinessProcesses,
 };

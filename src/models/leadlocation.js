@@ -13,6 +13,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "leadId",
         as: "lead",
       });
+
+      LeadLocation.belongsToMany(models.BusinessProcess, {
+        through: models.BusinessProcessLeadLocation,
+        foreignKey: 'leadLocationId',
+        otherKey: 'businessProcessId',
+        as: 'businessProcesses'
+      });
     }
   }
   LeadLocation.init(

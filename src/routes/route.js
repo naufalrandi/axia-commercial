@@ -3,6 +3,7 @@ const leadController = require("../controllers/sales/lead-controller");
 const leadLocationController = require("../controllers/sales/lead-location-controller");
 const leadContactController = require("../controllers/sales/lead-contact-controller");
 const leadBillingContactController = require("../controllers/sales/lead-billing-contact-controller");
+const businessProcessController = require("../controllers/business-process-controller");
 const express = require("express");
 const mainRoutes = express.Router();
 
@@ -22,6 +23,10 @@ mainRoutes.put("/lead-locations/:id", authMiddleware, leadLocationController.upd
 mainRoutes.delete("/lead-locations/:id", authMiddleware, leadLocationController.destroy);
 mainRoutes.delete("/lead-locations", authMiddleware, leadLocationController.destroyMany);
 
+// Lead Location Business Process Assignment
+// mainRoutes.get("/lead-locations/:id/business-processes", authMiddleware, leadLocationController.getBusinessProcesses);
+mainRoutes.put("/lead-locations/:id/sync-business-processes", authMiddleware, leadLocationController.syncBusinessProcess);
+
 // Lead Contacts - Sales Module
 mainRoutes.get("/lead-contacts", authMiddleware, leadContactController.getAll);
 mainRoutes.post("/lead-contacts", authMiddleware, leadContactController.create);
@@ -37,5 +42,13 @@ mainRoutes.get("/lead-billing-contacts/:id", authMiddleware, leadBillingContactC
 mainRoutes.put("/lead-billing-contacts/:id", authMiddleware, leadBillingContactController.update);
 mainRoutes.delete("/lead-billing-contacts/:id", authMiddleware, leadBillingContactController.destroy);
 mainRoutes.delete("/lead-billing-contacts", authMiddleware, leadBillingContactController.destroyMany);
+
+// Business Process
+mainRoutes.get("/business-processes", authMiddleware, businessProcessController.getAll);
+mainRoutes.post("/business-processes", authMiddleware, businessProcessController.create);
+mainRoutes.get("/business-processes/:id", authMiddleware, businessProcessController.getOne);
+mainRoutes.put("/business-processes/:id", authMiddleware, businessProcessController.update);
+mainRoutes.delete("/business-processes/:id", authMiddleware, businessProcessController.destroy);
+mainRoutes.delete("/business-processes", authMiddleware, businessProcessController.destroyMany);
 
 module.exports = mainRoutes;

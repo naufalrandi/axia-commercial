@@ -34,8 +34,14 @@ const deleteLeadLocationManyValidation = Joi.object({
   ids: Joi.array().items(Joi.number().integer().positive()).min(1).required(),
 });
 
+const syncBusinessProcessValidation = Joi.object({
+  leadLocationId: Joi.number().integer().positive().required(),
+  businessProcessIds: Joi.array().items(Joi.number().integer().positive()).required(),
+});
+
 module.exports = {
   createLeadLocationValidation,
   updateLeadLocationValidation,
   deleteLeadLocationManyValidation,
+  syncBusinessProcessValidation,
 };

@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "billingContacts",
         onDelete: "CASCADE",
       });
+
+      Lead.hasMany(models.BusinessProcess, {
+        foreignKey: "leadId",
+        as: "businessProcesses",
+        onDelete: "CASCADE",
+      });
     }
   }
   Lead.init(
