@@ -597,6 +597,65 @@ async function enrichAddressWithMasterdata(addressId, modelMasterdata) {
   return address;
 }
 
+async function syncDataHasMany(payload, transaction) {
+  const { currentModel, where, data } = payload;
+  const existingIds = await currentModel.findAll({
+    where,
+    attributes: ["id"],
+  });
+
+  const incomingIds = data.map((item) => item.id).filter(Boolean);
+  const idsToDelete = existingIds
+    .filter((item) => !incomingIds.includes(item.id))
+    .map((item) => item.id);
+
+  if (idsToDelete.length > 0) {
+    await currentModel.destroy({
+      where: {
+        id: {
+          [Op.in]: idsToDelete,
+        },
+      },
+      transaction,
+    });
+  }
+}
+
+async function generateInquiryCode(service, transaction = null) {
+  const inquiry = await model.Inquiry.findOne({
+    order: [["runningNumber", "DESC"]],
+    attributes: ["runningNumber"],
+    transaction,
+  });
+
+  const runningNumber = inquiry ? inquiry.runningNumber + 1 : 1;
+  const code = `0035${service.id}${runningNumber}`;
+
+  return {
+    runningNumber,
+    code,
+  };
+}
+
+async function generateTrainingCode(transaction = null) {
+  const training = await model.Training.findOne({
+    where: {
+      runningNumber: {
+        [Op.not]: null,
+      },
+    },
+    attributes: ["runningNumber"],
+    order: [["runningNumber", "DESC"]],
+    transaction,
+  });
+
+  const runNum = training ? training.runningNumber + 1 : 1;
+  return {
+    runningNumber: runNum,
+    code: `0209${runNum}`,
+  };
+}
+
 module.exports = {
   generateToken,
   generateRefreshToken,
@@ -634,4 +693,7 @@ module.exports = {
   checkLegalEntityType,
   checkIafCodes,
   enrichAddressWithMasterdata,
+  syncDataHasMany,
+  generateInquiryCode,
+  generateTrainingCode,
 };

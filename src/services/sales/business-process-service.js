@@ -1,19 +1,19 @@
-const model = require("../models/index");
-const modelMasterdata = require("../models/masterdata/index");
+const model = require("../../models/index");
+const modelMasterdata = require("../../models/masterdata/index");
 const {
   searchData,
   pagination,
   getDataById,
   checkDataExists,
-} = require("../helpers/func");
+} = require("../../helpers/func");
 const { Op } = require("sequelize");
-const { ResponseError } = require("../errors/response-error");
-const validate = require("../validations/validation");
+const { ResponseError } = require("../../errors/response-error");
+const validate = require("../../validations/validation");
 const {
   createBusinessProcessValidation,
   updateBusinessProcessValidation,
   deleteBusinessProcessManyValidation,
-} = require("../validations/business-process-validation");
+} = require("../../validations/business-process-validation");
 
 const getData = async (id) => {
   return await getDataById(

@@ -3,7 +3,8 @@ const leadController = require("../controllers/sales/lead-controller");
 const leadLocationController = require("../controllers/sales/lead-location-controller");
 const leadContactController = require("../controllers/sales/lead-contact-controller");
 const leadBillingContactController = require("../controllers/sales/lead-billing-contact-controller");
-const businessProcessController = require("../controllers/business-process-controller");
+const businessProcessController = require("../controllers/sales/business-process-controller");
+const inquiryController = require("../controllers/sales/inquiry-controller");
 const express = require("express");
 const mainRoutes = express.Router();
 
@@ -22,9 +23,6 @@ mainRoutes.get("/lead-locations/:id", authMiddleware, leadLocationController.get
 mainRoutes.put("/lead-locations/:id", authMiddleware, leadLocationController.update);
 mainRoutes.delete("/lead-locations/:id", authMiddleware, leadLocationController.destroy);
 mainRoutes.delete("/lead-locations", authMiddleware, leadLocationController.destroyMany);
-
-// Lead Location Business Process Assignment
-// mainRoutes.get("/lead-locations/:id/business-processes", authMiddleware, leadLocationController.getBusinessProcesses);
 mainRoutes.put("/lead-locations/:id/sync-business-processes", authMiddleware, leadLocationController.syncBusinessProcess);
 
 // Lead Contacts - Sales Module
@@ -50,5 +48,15 @@ mainRoutes.get("/business-processes/:id", authMiddleware, businessProcessControl
 mainRoutes.put("/business-processes/:id", authMiddleware, businessProcessController.update);
 mainRoutes.delete("/business-processes/:id", authMiddleware, businessProcessController.destroy);
 mainRoutes.delete("/business-processes", authMiddleware, businessProcessController.destroyMany);
+
+// Inquiry
+mainRoutes.get("/inquiries", authMiddleware, inquiryController.getAll);
+mainRoutes.post("/inquiries", authMiddleware, inquiryController.create);
+mainRoutes.get("/inquiries/:id", authMiddleware, inquiryController.getOne);
+mainRoutes.put("/inquiries/:id/consultancy", authMiddleware, inquiryController.updateConsultancy);
+mainRoutes.put("/inquiries/:id/training", authMiddleware, inquiryController.updateTraining);
+mainRoutes.delete("/inquiries/:id", authMiddleware, inquiryController.destroy);
+mainRoutes.delete("/inquiries", authMiddleware, inquiryController.destroyMany);
+mainRoutes.post("/inquiries/:id/generate-proposal", authMiddleware, inquiryController.generateProposal);
 
 module.exports = mainRoutes;

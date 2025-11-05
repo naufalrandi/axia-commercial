@@ -3,7 +3,10 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Standard extends Model {
     static associate(models) {
-      // define association here
+      Standard.belongsTo(models.SchemeTag, {
+        foreignKey: "schemeTagId",
+        as: "schemeTag",
+      });
     }
   }
   Standard.init(

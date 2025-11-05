@@ -27,6 +27,12 @@ module.exports = (sequelize, DataTypes) => {
         as: "businessProcesses",
         onDelete: "CASCADE",
       });
+
+      Lead.hasMany(models.Inquiry, {
+        foreignKey: "leadId",
+        as: "inquiries",
+        onDelete: "CASCADE",
+      });
     }
   }
   Lead.init(

@@ -23,6 +23,11 @@ const DOCUMENT_REVIEW_STATUS = Object.freeze({
   REVIEWED: "Reviewed",
 });
 
+const SERVICES = Object.freeze({
+  CONSULTANCY: "Consultancy",
+  TRAINING: "Training",
+});
+
 const asArray = (obj) => Object.keys(obj).map((key) => obj[key]);
 
 module.exports = {
@@ -30,5 +35,6 @@ module.exports = {
   ACCOUNT_TYPE,
   CONTRACT_TEMPLATE_STATUSES,
   DOCUMENT_REVIEW_STATUS,
+  SERVICES,
   asArray,
 };

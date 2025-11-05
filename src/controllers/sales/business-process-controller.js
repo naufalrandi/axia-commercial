@@ -1,4 +1,4 @@
-const businessProcessService = require("../services/business-process-service");
+const businessProcessService = require("../../services/sales/business-process-service");
 
 const getAll = async (req, res, next) => {
   try {
