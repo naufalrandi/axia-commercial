@@ -50,6 +50,17 @@ const getAll = async (data) => {
     order: [[sortBy, orderby]],
   });
 
+  result.rows = await Promise.all(
+    result.rows.map(async (leadBillingContact) => {
+      const plainLeadBillingContact = leadBillingContact.get({ plain: true });
+      plainLeadBillingContact.address = await enrichAddressWithMasterdata(
+        plainLeadBillingContact.addressId,
+        modelMasterdata
+      );
+      return plainLeadBillingContact;
+    })
+  );
+
   return pagination(result, page, limit);
 };
 

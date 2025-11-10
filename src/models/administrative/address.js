@@ -45,26 +45,18 @@ module.exports = (sequelize, DataTypes) => {
       villageId: {
         type: DataTypes.BIGINT,
         allowNull: true,
-        references: {
-          model: "Villages",
-          key: "id",
-        },
       },
       districtId: {
         type: DataTypes.BIGINT,
         allowNull: true,
-        references: {
-          model: "Districts",
-          key: "id",
-        },
       },
       cityId: {
         type: DataTypes.BIGINT,
         allowNull: true,
-        references: {
-          model: "Cities",
-          key: "id",
-        },
+      },
+      provinceId: {
+        type: DataTypes.BIGINT,
+        allowNull: true,
       },
       countryId: {
         type: DataTypes.BIGINT,

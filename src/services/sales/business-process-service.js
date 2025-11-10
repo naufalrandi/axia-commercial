@@ -54,6 +54,31 @@ const getAll = async (data) => {
     order: [[sortBy, orderby]],
   });
 
+  result.rows = await Promise.all(
+    result.rows.map(async (businessProcess) => {
+      const plainBusinessProcess = businessProcess.get({ plain: true });
+      plainBusinessProcess.processFunctions = await modelMasterdata.ProcessFunction.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: {
+          id: {
+            [Op.in]: plainBusinessProcess.processFunctions.map((func) => func.id),
+          },
+        },
+      }).then((funcs) => funcs.map((r) => r.get({ plain: true })));
+      // plainBusinessProcess.leadLocations = await Promise.all(
+      //   plainBusinessProcess.leadLocations.map(async (leadLocation) => {
+      //     const plainLeadLocation = leadLocation.get({ plain: true });
+      //     plainLeadLocation.address = await enrichAddressWithMasterdata(
+      //       plainLeadLocation.addressId,
+      //       modelMasterdata
+      //     );
+      //     return plainLeadLocation;
+      //   })
+      // );
+      return plainBusinessProcess;
+    })
+  );
+
   return pagination(result, page, limit);
 };
 

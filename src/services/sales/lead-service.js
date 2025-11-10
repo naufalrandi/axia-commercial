@@ -19,37 +19,40 @@ const {
 } = require("../../validations/sales/lead-validation");
 
 const getLead = async (id) => {
-  const lead = await model.Lead.findOne({
+  const leadInstance = await model.Lead.findOne({
     where: { id },
-    include: [
-      {
-        model: model.LeadLocation,
-        as: "locations",
-      },
-      {
-        model: model.LeadContact,
-        as: "contacts",
-      },
-      {
-        model: model.LeadBillingContact,
-        as: "billingContacts",
-      },
-    ],
   });
 
-  if (!lead) {
+  if (!leadInstance) {
     throw new ResponseError(404, "Lead not found");
   }
 
-  if (lead.iafCodes.length > 0) {
+  const lead = leadInstance.get({ plain: true });
+  if (lead.legalEntityTypeId) {
+    const legalEntityType = await modelMasterdata.LegalEntityType.findOne({
+      attributes: { exclude: ["createdAt", "updatedAt"] },
+      where: { id: lead.legalEntityTypeId },
+    });
+
+    lead.legalEntityType = legalEntityType
+      ? legalEntityType.get({ plain: true })
+      : null;
+  } else {
+    lead.legalEntityType = null;
+  }
+
+  if (lead.iafCodes && lead.iafCodes.length > 0) {
+    const iafIds = lead.iafCodes.map((code) => code.id);
     lead.iafCodes = await modelMasterdata.IafCode.findAll({
       attributes: { exclude: ["createdAt", "updatedAt"] },
       where: {
         id: {
-          [Op.in]: lead.iafCodes.map((code) => code.id),
+          [Op.in]: iafIds,
         },
       },
     }).then((codes) => codes.map((r) => r.get({ plain: true })));
+  } else {
+    lead.iafCodes = [];
   }
 
   return lead;
@@ -63,6 +66,13 @@ const getAll = async (data) => {
     where: {
       ...fieldSearch,
     },
+    include: [
+      {
+        model: model.Inquiry,
+        as: "inquiries",
+        attributes: ["id", "code"],
+      }
+    ],
     limit,
     offset,
     order: [[sortBy, orderby]],
@@ -70,16 +80,32 @@ const getAll = async (data) => {
 
   result.rows = await Promise.all(
     result.rows.map(async (lead) => {
-      if (lead.iafCodes.length > 0) {
-        lead.iafCodes = await modelMasterdata.IafCode.findAll({
+      lead = lead.get({ plain: true });
+
+      if (lead.legalEntityTypeId) {
+        const legalEntityType = await modelMasterdata.LegalEntityType.findOne({
           attributes: { exclude: ["createdAt", "updatedAt"] },
-          where: {
-            id: {
-              [Op.in]: lead.iafCodes.map((code) => code.id),
-            },
-          },
-        }).then((codes) => codes.map((r) => r.get({ plain: true })));
+          where: { id: lead.legalEntityTypeId },
+        });
+
+        lead.legalEntityType = legalEntityType
+          ? legalEntityType.get({ plain: true })
+          : null;
       }
+
+      // if (lead.iafCodes?.length > 0) {
+      //   const codes = await modelMasterdata.IafCode.findAll({
+      //     attributes: { exclude: ["createdAt", "updatedAt"] },
+      //     where: {
+      //       id: {
+      //         [Op.in]: lead.iafCodes.map((code) => code.id),
+      //       },
+      //     },
+      //   });
+
+      //   lead.iafCodes = codes.map((r) => r.get({ plain: true }));
+      // }
+
       return lead;
     })
   );

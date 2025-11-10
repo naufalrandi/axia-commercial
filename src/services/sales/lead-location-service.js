@@ -46,6 +46,17 @@ const getAll = async (data) => {
     order: [[sortBy, orderby]],
   });
 
+  result.rows = await Promise.all(
+    result.rows.map(async (leadLocation) => {
+      const plainLeadLocation = leadLocation.get({ plain: true });
+      plainLeadLocation.address = await enrichAddressWithMasterdata(
+        plainLeadLocation.addressId,
+        modelMasterdata
+      );
+      return plainLeadLocation;
+    })
+  );
+
   return pagination(result, page, limit);
 };
 
@@ -76,8 +87,8 @@ const getOne = async (id) => {
         model: model.BusinessProcess,
         as: "businessProcesses",
         attributes: ["id", "name", "processFunctions"],
-        through: { attributes: [] }
-      }
+        through: { attributes: [] },
+      },
     ],
   }).then((res) => res.get({ plain: true }));
 
@@ -91,16 +102,17 @@ const getOne = async (id) => {
   );
 
   if (leadLocation.businessProcesses.length > 0) {
-    const processFunctionDetails = await modelMasterdata.ProcessFunction.findAll({
-      attributes: { exclude: ["createdAt", "updatedAt"] },
-      where: {
-        id: {
-          [Op.in]: leadLocation.businessProcesses
-            .flatMap((bp) => bp.processFunctions)
-            .map((pf) => pf.id),
+    const processFunctionDetails =
+      await modelMasterdata.ProcessFunction.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: {
+          id: {
+            [Op.in]: leadLocation.businessProcesses
+              .flatMap((bp) => bp.processFunctions)
+              .map((pf) => pf.id),
+          },
         },
-      },
-    });
+      });
 
     leadLocation.businessProcesses.forEach((bp) => {
       bp.processFunctions = processFunctionDetails
@@ -157,25 +169,28 @@ const destroyMany = async (data) => {
 
 const syncBusinessProcess = async (data) => {
   data = validate(syncBusinessProcessValidation, data);
-  
+
   // Validate LeadLocation exists
   const leadLocation = await getData(data.leadLocationId);
-  
+
   // Validate BusinessProcesses exist and belong to the same lead (if any provided)
   if (data.businessProcessIds.length > 0) {
     await Promise.all(
       data.businessProcessIds.map(async (businessProcessId) => {
         const businessProcess = await model.BusinessProcess.findOne({
-          where: { 
+          where: {
             id: businessProcessId,
-            leadId: leadLocation.leadId 
-          }
+            leadId: leadLocation.leadId,
+          },
         });
-        
+
         if (!businessProcess) {
-          throw new ResponseError(404, `Business process ${businessProcessId} not found or doesn't belong to the same lead`);
+          throw new ResponseError(
+            404,
+            `Business process ${businessProcessId} not found or doesn't belong to the same lead`
+          );
         }
-        
+
         return businessProcess;
       })
     );
@@ -192,13 +207,12 @@ const syncBusinessProcess = async (data) => {
 
     // Create new associations if businessProcessIds are provided
     if (data.businessProcessIds.length > 0) {
-      const associations = data.businessProcessIds.map(businessProcessId => ({
+      const associations = data.businessProcessIds.map((businessProcessId) => ({
         businessProcessId,
         leadLocationId: data.leadLocationId,
       }));
 
       console.log("Associations to be created:", associations);
-      
 
       await model.BusinessProcessLeadLocation.bulkCreate(associations, {
         transaction: t,
@@ -218,7 +232,7 @@ const syncBusinessProcess = async (data) => {
           model: model.BusinessProcess,
           as: "businessProcesses",
           attributes: ["id", "name", "processFunctions"],
-          through: { attributes: [] }
+          through: { attributes: [] },
         },
       ],
       transaction: t,
@@ -242,7 +256,7 @@ const getBusinessProcesses = async (leadLocationId) => {
         model: model.BusinessProcess,
         as: "businessProcesses",
         attributes: ["id", "name", "processFunctions"],
-        through: { attributes: [] }
+        through: { attributes: [] },
       },
     ],
   });

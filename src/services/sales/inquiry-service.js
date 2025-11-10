@@ -371,7 +371,7 @@ const getAll = async (data) => {
   }
 
   const result = await model.Inquiry.findAndCountAll({
-    // where: whereClause,
+    where: whereClause,
     include: [
       {
         model: model.Lead,
