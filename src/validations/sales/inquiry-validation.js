@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const { asArray, PAYMENT_CONDITIONS } = require("../../enum/utils");
 
 const createInquiryValidation = Joi.object({
   leadId: Joi.string().uuid().required(),
@@ -70,7 +71,7 @@ const createInquiryValidation = Joi.object({
             .items(
               Joi.object({
                 class: Joi.number().integer().positive().required(),
-                participant: Joi.number().integer().positive().required(),
+                // participant: Joi.number().integer().positive().required(),
                 deliveryMethod: Joi.string()
                   .optional()
                   .valid(
@@ -180,7 +181,21 @@ const updateInquiryConsultancyValidation = Joi.object({
 
   appendix: Joi.object({
     id: Joi.number().integer().positive().optional(),
-    paymentTerms: Joi.required(),
+    paymentTerms: Joi.array()
+      .items(
+        Joi.object({
+          term: Joi.number().integer().positive().required(),
+          rate: Joi.number().integer().positive().required(),
+          days: Joi.number().integer().positive().required(),
+          paymentCondition: Joi.object({
+            triger: Joi.string()
+              .valid(...asArray(PAYMENT_CONDITIONS))
+              .required(),
+            param: Joi.number().optional().allow(null),
+          }).required(),
+        })
+      )
+      .required(),
     innerCityTransportation: Joi.string()
       .required()
       .valid("Provided by the Client", "Provided by AXIA", "Not Provided"),
@@ -264,7 +279,7 @@ const updateInquiryTrainingValidation = Joi.object({
             Joi.object({
               id: Joi.number().integer().positive().optional(),
               class: Joi.number().integer().positive().required(),
-              participant: Joi.number().integer().positive().required(),
+              // participant: Joi.number().integer().positive().required(),
               deliveryMethod: Joi.string()
                 .optional()
                 .valid(
@@ -298,7 +313,21 @@ const updateInquiryTrainingValidation = Joi.object({
 
   appendix: Joi.object({
     id: Joi.number().integer().positive().optional(),
-    paymentTerms: Joi.required(),
+    paymentTerms: Joi.array()
+      .items(
+        Joi.object({
+          term: Joi.number().integer().positive().required(),
+          rate: Joi.number().integer().positive().required(),
+          days: Joi.number().integer().positive().required(),
+          paymentCondition: Joi.object({
+            triger: Joi.string()
+              .valid(...asArray(PAYMENT_CONDITIONS))
+              .required(),
+            param: Joi.number().optional().allow(null),
+          }).required(),
+        })
+      )
+      .required(),
     innerCityTransportation: Joi.string()
       .required()
       .valid("Provided by the Client", "Provided by AXIA", "Not Provided"),

@@ -5,6 +5,7 @@ const { ResponseError } = require("../errors/response-error");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const CryptoJS = require("crypto-js");
+const { transporter } = require("../applications/email");
 require("dotenv");
 
 const {
@@ -14,6 +15,7 @@ const {
   JWT_EXPIRES_IN,
   JWT_REFRESH_EXPIRES_IN,
 } = process.env;
+const moment = require("moment");
 
 function generateToken(user) {
   return jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, {
@@ -289,7 +291,7 @@ async function generateContractTemplateCode(contractVariantId) {
 async function getUser(userId) {
   if (!userId) return null;
   const user = await modelAdminstrative.User.findByPk(userId, {
-    attributes: ["id", "email"],
+    attributes: ["id", "email", "username"],
     include: [
       {
         model: modelAdminstrative.UserDetail,
@@ -656,6 +658,399 @@ async function generateTrainingCode(transaction = null) {
   };
 }
 
+async function generateProposalCode(data, transaction = null) {
+  const { type, proposal } = data;
+  const year = new Date().getFullYear();
+  let runningNumber,
+    version,
+    code = null;
+
+  switch (type) {
+    case "CREATE":
+      const existing_proposal = await model.Proposal.findOne({
+        where: {
+          year: year,
+          runningNumber: {
+            [Op.not]: null,
+          },
+        },
+        order: [["runningNumber", "DESC"]],
+        attributes: ["runningNumber"],
+        transaction,
+      });
+
+      version = 1;
+      runningNumber = existing_proposal
+        ? existing_proposal.runningNumber + 1
+        : 1;
+      code = `0821-${year}-${runningNumber}-${version}`;
+      return { code, runningNumber, version, year };
+
+    case "REVISE":
+      if (!proposal.runningNumber) {
+        return {
+          code: null,
+          runningNumber: null,
+          version: null,
+          year: null,
+        };
+      }
+
+      runningNumber = proposal.runningNumber;
+      version = proposal.version + 1;
+      code = `0821-${year}-${runningNumber}-${version}`;
+      return { code, runningNumber, version, year };
+
+    default:
+      return {
+        code: null,
+        runningNumber: null,
+        version: null,
+        year: null,
+      };
+  }
+}
+
+function generateOTP(length = 6) {
+  if (length <= 0) {
+    throw new Error("Panjang OTP harus lebih besar dari 0");
+  }
+
+  let otp = "";
+  for (let i = 0; i < length; i++) {
+    otp += Math.floor(Math.random() * 10); // Angka acak dari 0 hingga 9
+  }
+
+  return otp;
+}
+
+function parseTimeToMilliseconds(timeString) {
+  const timeUnit = timeString.slice(-1); // Ambil huruf terakhir (d, h, m, s)
+  const timeValue = parseInt(timeString.slice(0, -1), 10); // Ambil angka sebelum unit
+
+  if (isNaN(timeValue)) {
+    throw new Error(
+      "OTP_EXPIRED harus berupa angka diikuti unit waktu (d, h, m, s)."
+    );
+  }
+
+  switch (timeUnit) {
+    case "d":
+      return timeValue * 24 * 60 * 60 * 1000; // Hari ke milidetik
+    case "h":
+      return timeValue * 60 * 60 * 1000; // Jam ke milidetik
+    case "m":
+      return timeValue * 60 * 1000; // Menit ke milidetik
+    case "s":
+      return timeValue * 1000; // Detik ke milidetik
+    default:
+      throw new Error(
+        "Unit waktu tidak valid. Gunakan 'd', 'h', 'm', atau 's'."
+      );
+  }
+}
+
+const getOTPVerification = async (metaData) => {
+  const otp = generateOTP();
+  const expiredAt = parseTimeToMilliseconds(process.env.OTP_EXPIRED || "5m");
+  const verification = await modelAdminstrative.OtpVerification.create({
+    otp,
+    metaData,
+    expired_at: new Date(Date.now() + expiredAt),
+  });
+
+  return verification.otp;
+};
+
+const verifyVerification = async (otp, metaData) => {
+  const verification = await modelAdminstrative.OtpVerification.findOne({
+    where: { otp, metaData },
+  });
+
+  if (!verification) {
+    throw new Error("OTP is invalid");
+  }
+
+  if (verification.expired_at < new Date()) {
+    throw new Error("OTP has expired");
+  }
+
+  return await modelAdminstrative.OtpVerification.destroy({
+    where: { otp, metaData },
+  });
+};
+
+const generateProjectCode = async (transaction) => {
+  const project = await model.Project.findOne({
+    where: {
+      runningNumber: {
+        [Op.not]: null,
+      },
+    },
+    order: [["runningNumber", "DESC"]],
+    attributes: ["runningNumber"],
+    transaction,
+  });
+
+  const runningNumber = project ? project.runningNumber + 1 : 1;
+  return {
+    code: `0090${runningNumber}`,
+    runningNumber,
+  };
+};
+
+const getTrainingCourse = async (id) => {
+  const trainingCourse = await modelMasterdata.TrainingCourse.findOne({
+    where: { id },
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: modelMasterdata.Standard,
+        as: "standards",
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        through: { attributes: [] },
+        include: [
+          {
+            model: modelMasterdata.SchemeTag,
+            as: "schemeTag",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+          },
+        ],
+      },
+    ],
+  });
+
+  return trainingCourse.get({ plain: true });
+};
+
+const generateTrainingCertificateCode = async (
+  trainingId,
+  transaction = null
+) => {
+  const training = await model.Training.findOne({
+    where: { id: trainingId },
+    attributes: ["code"],
+    transaction,
+  });
+
+  const result = await model.TrainingCertificate.findOne({
+    where: {
+      runningNumber: {
+        [Op.not]: null,
+      },
+    },
+    order: [["runningNumber", "DESC"]],
+    transaction,
+  });
+
+  const runningNumber = result ? result.runningNumber + 1 : 1;
+  return {
+    runningNumber: runningNumber,
+    code: `0044/${new Date().getFullYear()}/${training.code}/${runningNumber}`,
+  };
+};
+
+const createHistory = (currentHistories, label, additionalData = {}) => {
+  const newHistoryEntry = {
+    id: Date.now(),
+    label: label,
+    timestamp: new Date().toISOString(),
+    details: additionalData,
+  };
+
+  let histories = [];
+  if (currentHistories) {
+    if (Array.isArray(currentHistories)) {
+      histories = currentHistories;
+    } else if (typeof currentHistories === "string") {
+      try {
+        const parsed = JSON.parse(currentHistories);
+        if (Array.isArray(parsed)) {
+          histories = parsed;
+        }
+      } catch (error) {
+        histories = [];
+      }
+    }
+  }
+};
+
+const createComments = (currentComments, comment, additionalData = {}) => {
+  const newHistoryEntry = {
+    id: Date.now(),
+    comment: comment,
+    timestamp: new Date().toISOString(),
+    details: additionalData,
+  };
+
+  let histories = [];
+  if (currentComments) {
+    if (Array.isArray(currentComments)) {
+      histories = currentComments;
+    } else if (typeof currentComments === "string") {
+      try {
+        const parsed = JSON.parse(currentComments);
+        if (Array.isArray(parsed)) {
+          histories = parsed;
+        }
+      } catch (error) {
+        histories = [];
+      }
+    }
+  }
+
+  histories.push(newHistoryEntry);
+  return JSON.stringify(histories);
+};
+
+const generateWorkorderCode = async (
+  type = "CREATE",
+  workorderId = null,
+  transaction = null
+) => {
+  const date = new Date().getFullYear();
+  let workorder = null;
+  if (type == "REVISI") {
+    workorder = await model.WorkOrder.findOne({
+      where: { id: workorderId },
+      attributes: ["runningNumber", "version"],
+      transaction,
+    });
+
+    const runningNumber = workorder.runningNumber;
+    const version = workorder.version + 1;
+    const code = `0019-${date}-${runningNumber}-${version}`;
+    return { runningNumber, code, version };
+  }
+
+  workorder = await model.WorkOrder.findOne({
+    order: [["runningNumber", "DESC"]],
+    attributes: ["runningNumber"],
+    transaction,
+  });
+
+  const runningNumber = workorder ? workorder.runningNumber + 1 : 1;
+  const code = `0019-${date}-${runningNumber}-1`;
+  return { runningNumber, code, version: 1 };
+};
+
+function getStandardsFromProject(project) {
+  const standards = project?.training?.trainingCourse?.standards ?? [];
+
+  return standards.map((std) => ({
+    id: std.id,
+    sortName: std.sortName,
+    prefix: std.prefix,
+    standardNumber: std.standardNumber,
+    issueYear: std.issueYear,
+  }));
+}
+
+const generateInvoiceCode = async () => {
+  const date = new Date().getFullYear();
+  const invoice = await modelAdminstrative.Invoice.findOne({
+    order: [["runningNumber", "DESC"]],
+    attributes: ["runningNumber"],
+  });
+
+  const runningNumber = invoice ? invoice.runningNumber + 1 : 1;
+  const code = `0066-${date}-${runningNumber}`;
+  return { runningNumber, code };
+};
+
+const getBankAccountByPurpose = async (purpose) => {
+  const bankAccount = await modelAdminstrative.BankAccount.findOne({
+    where: { purposeUseds: { [Op.contains]: [purpose] } },
+  });
+
+  if (!bankAccount) {
+    throw new Error(`Bank account with purpose "${purpose}" not found`);
+  }
+
+  bankAccount.dataValues.bank = await modelMasterdata.Bank.findByPk(
+    bankAccount.bankId,
+    {
+      attributes: ["id", "name", "code"],
+      raw: true,
+    }
+  );
+
+  return bankAccount;
+};
+
+const getPrimaryLocation = async () => {
+  const location = await modelAdminstrative.Location.findOne({
+    where: { primary: true },
+  });
+
+  if (!location) {
+    throw new Error(`Primary location not found`);
+  }
+
+  location.dataValues.address = await enrichAddressWithMasterdata(
+    location.addressId,
+    modelMasterdata
+  );
+
+  return location;
+};
+
+const sentInvoiceEmail = async (invoice, billingContact) => {
+  const { CURRENT_EMAIL } = process.env;
+
+  if (!billingContact || !billingContact.email) {
+    throw new ResponseError(
+      400,
+      "Billing contact email is required to send invoice"
+    );
+  }
+
+  const dueDate = moment(invoice.paymentTerm.dueDate)
+    .add(invoice.paymentTerm.days, "day")
+    .format("YYYY-MM-DD");
+
+  await modelAdminstrative.Invoice.update(
+    {
+      dueDate: dueDate,
+    },
+    {
+      where: { id: invoice.id },
+    }
+  );
+
+  const { legalEntityType, name } = invoice?.client ?? {};
+  const clientName = `${legalEntityType?.prefix ?? ""}. ${name ?? ""} ${
+    legalEntityType?.suffix ?? ""
+  }`.trim();
+
+  const mailOptions = {
+    from: CURRENT_EMAIL ?? "sample@axia.com",
+    to: billingContact.email,
+    subject: `Confidential: Invoice ${invoice.code} for ${clientName}`,
+    template: "invoice",
+    context: {
+      billingName: billingContact?.fullname || billingContact?.email,
+      invoiceNumber: invoice.code,
+      issueDate: moment(invoice.issueDate).format("DD MMMM YYYY"),
+      dueDate: moment(dueDate).format("DD MMMM YYYY"),
+      // amount: invoice?.investmentFees?.totalFeesPaid,
+      bankName: invoice?.bankAccount?.bank?.name,
+      accountHolder: invoice?.bankAccount?.accountHolder,
+      accountNumber: invoice?.bankAccount?.accountNumber,
+      bankAddress: invoice?.bankAccount?.bankAddress,
+    },
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (emailError) {
+    throw new ResponseError(
+      500,
+      `Failed to send invoice email: ${emailError.message}`
+    );
+  }
+};
+
 module.exports = {
   generateToken,
   generateRefreshToken,
@@ -678,7 +1073,6 @@ module.exports = {
   createContractHistoryEntry,
   generateContractTemplateCode,
   getUser,
-  // DocumentReview constants and functions
   DOCUMENT_REVIEW_STATUSES,
   REVIEWABLE_TYPES,
   DOCUMENT_REVIEW_STATUS_TRANSITIONS,
@@ -696,4 +1090,18 @@ module.exports = {
   syncDataHasMany,
   generateInquiryCode,
   generateTrainingCode,
+  generateProposalCode,
+  getOTPVerification,
+  verifyVerification,
+  generateProjectCode,
+  getTrainingCourse,
+  generateTrainingCertificateCode,
+  createHistory,
+  createComments,
+  generateWorkorderCode,
+  getStandardsFromProject,
+  generateInvoiceCode,
+  getBankAccountByPurpose,
+  getPrimaryLocation,
+  sentInvoiceEmail,
 };

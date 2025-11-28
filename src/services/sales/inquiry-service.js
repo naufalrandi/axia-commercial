@@ -9,6 +9,8 @@ const {
   syncDataHasMany,
   generateTrainingCode,
   generateInquiryCode,
+  generateProposalCode,
+  getTrainingCourse,
 } = require("../../helpers/func");
 const { Op } = require("sequelize");
 const { ResponseError } = require("../../errors/response-error");
@@ -18,8 +20,8 @@ const {
   deleteInquiryManyValidation,
   updateInquiryConsultancyValidation,
   updateInquiryTrainingValidation,
-} = require("../../validations/inquiry-validation");
-const { SERVICES } = require("../../enum/utils");
+} = require("../../validations/sales/inquiry-validation");
+const { SERVICES, PROPOSAL_STATUS } = require("../../enum/utils");
 
 const getData = async (id) => {
   return await getDataById("Inquiry", id, "Inquiry not found");
@@ -271,29 +273,9 @@ const getInquiry = async (id) => {
         if (inquiryTraining) {
           if (inquiryTraining.trainings.length > 0) {
             for (const training of inquiryTraining.trainings) {
-              let trainingCourse = await modelMasterdata.TrainingCourse.findOne(
-                {
-                  where: { id: training.trainingCourseId },
-                  attributes: { exclude: ["createdAt", "updatedAt"] },
-                  include: [
-                    {
-                      model: modelMasterdata.Standard,
-                      as: "standards",
-                      attributes: { exclude: ["createdAt", "updatedAt"] },
-                      through: { attributes: [] },
-                      include: [
-                        {
-                          model: modelMasterdata.SchemeTag,
-                          as: "schemeTag",
-                          attributes: { exclude: ["createdAt", "updatedAt"] },
-                        },
-                      ],
-                    },
-                  ],
-                }
+              const trainingCourse = await getTrainingCourse(
+                training.trainingCourseId
               );
-
-              trainingCourse = trainingCourse.get({ plain: true });
               training.trainingCourse = trainingCourse;
             }
           }
@@ -389,10 +371,6 @@ const getAll = async (data) => {
 
 const create = async (data) => {
   data = validate(createInquiryValidation, data);
-  const consultancyData = data.consultancy;
-  const trainingData = data.inquiryTraining.trainings;
-
-  // Validate Lead exists
   const leadExists = await checkDataExists("Lead", { id: data.leadId });
 
   if (!leadExists) {
@@ -421,6 +399,7 @@ const create = async (data) => {
 
     switch (service.name) {
       case SERVICES.CONSULTANCY:
+        const consultancyData = data.consultancy;
         if (!consultancyData) {
           throw new ResponseError(
             400,
@@ -462,6 +441,7 @@ const create = async (data) => {
 
         break;
       case SERVICES.TRAINING:
+        const trainingData = data.inquiryTraining.trainings;
         if (!trainingData || trainingData.length === 0) {
           throw new ResponseError(
             400,
@@ -996,23 +976,31 @@ const destroyMany = async (data) => {
   });
 };
 
-const generateProposal = async (id) => {
+const generateProposal = async (id, userId) => {
   const inquiry = await getData(id);
+  const isExistingProposal = await model.Proposal.findOne({
+    where: { inquiryId: inquiry.id },
+  });
 
-  // Update proposal generated timestamp
-  const [affectedRows] = await model.Inquiry.update(
-    { proposalGeneratedAt: new Date() },
-    { where: { id } }
-  );
-
-  if (affectedRows === 0) {
-    throw new ResponseError(
-      404,
-      "Failed to update proposal generation timestamp"
-    );
+  if (isExistingProposal) {
+    throw new ResponseError(400, "Proposal already exists");
   }
 
-  return await getOne(id);
+  const { code, runningNumber, version, year } = await generateProposalCode({
+    type: "CREATE",
+    proposal: {},
+  });
+
+  return await model.Proposal.create({
+    leadId: inquiry.leadId,
+    inquiryId: inquiry.id,
+    issuedById: userId,
+    code,
+    runningNumber,
+    version,
+    year,
+    status: PROPOSAL_STATUS.DRAFT,
+  });
 };
 
 module.exports = {
@@ -1024,4 +1012,5 @@ module.exports = {
   destroy,
   destroyMany,
   generateProposal,
+  getInquiry,
 };

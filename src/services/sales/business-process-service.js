@@ -13,14 +13,10 @@ const {
   createBusinessProcessValidation,
   updateBusinessProcessValidation,
   deleteBusinessProcessManyValidation,
-} = require("../../validations/business-process-validation");
+} = require("../../validations/sales/business-process-validation");
 
 const getData = async (id) => {
-  return await getDataById(
-    "BusinessProcess",
-    id,
-    "Business process not found"
-  );
+  return await getDataById("BusinessProcess", id, "Business process not found");
 };
 
 const getAll = async (data) => {
@@ -46,7 +42,7 @@ const getAll = async (data) => {
         model: model.LeadLocation,
         as: "leadLocations",
         attributes: ["id", "leadId", "addressId"],
-        through: { attributes: [] }
+        through: { attributes: [] },
       },
     ],
     limit,
@@ -57,14 +53,17 @@ const getAll = async (data) => {
   result.rows = await Promise.all(
     result.rows.map(async (businessProcess) => {
       const plainBusinessProcess = businessProcess.get({ plain: true });
-      plainBusinessProcess.processFunctions = await modelMasterdata.ProcessFunction.findAll({
-        attributes: { exclude: ["createdAt", "updatedAt"] },
-        where: {
-          id: {
-            [Op.in]: plainBusinessProcess.processFunctions.map((func) => func.id),
+      plainBusinessProcess.processFunctions =
+        await modelMasterdata.ProcessFunction.findAll({
+          attributes: { exclude: ["createdAt", "updatedAt"] },
+          where: {
+            id: {
+              [Op.in]: plainBusinessProcess.processFunctions.map(
+                (func) => func.id
+              ),
+            },
           },
-        },
-      }).then((funcs) => funcs.map((r) => r.get({ plain: true })));
+        }).then((funcs) => funcs.map((r) => r.get({ plain: true })));
       // plainBusinessProcess.leadLocations = await Promise.all(
       //   plainBusinessProcess.leadLocations.map(async (leadLocation) => {
       //     const plainLeadLocation = leadLocation.get({ plain: true });
@@ -84,7 +83,7 @@ const getAll = async (data) => {
 
 const create = async (data) => {
   data = validate(createBusinessProcessValidation, data);
-  
+
   // Validate Lead exists
   const leadExists = await checkDataExists("Lead", { id: data.leadId });
   if (!leadExists) {
@@ -95,13 +94,16 @@ const create = async (data) => {
   if (data.leadLocations && data.leadLocations.length > 0) {
     for (const leadLocation of data.leadLocations) {
       const leadLocationExists = await model.LeadLocation.findOne({
-        where: { 
+        where: {
           id: leadLocation.id,
-          leadId: data.leadId 
-        }
+          leadId: data.leadId,
+        },
       });
       if (!leadLocationExists) {
-        throw new ResponseError(404, `Lead location ${leadLocation.id} not found or doesn't belong to the specified lead`);
+        throw new ResponseError(
+          404,
+          `Lead location ${leadLocation.id} not found or doesn't belong to the specified lead`
+        );
       }
     }
   }
@@ -109,38 +111,48 @@ const create = async (data) => {
   // Validate ProcessFunctions exist
   if (data.processFunctions && data.processFunctions.length > 0) {
     for (const processFunction of data.processFunctions) {
-      const processFunctionExists = await modelMasterdata.ProcessFunction.findOne({
-        where: { id: processFunction.id }
-      });
+      const processFunctionExists =
+        await modelMasterdata.ProcessFunction.findOne({
+          where: { id: processFunction.id },
+        });
       if (!processFunctionExists) {
-        throw new ResponseError(404, `Process function ${processFunction.id} not found`);
+        throw new ResponseError(
+          404,
+          `Process function ${processFunction.id} not found`
+        );
       }
     }
   }
-  
+
   return await model.sequelize.transaction(async (t) => {
     // Extract leadLocations and processFunctions before creating BusinessProcess
     const { leadLocations, processFunctions, ...businessProcessData } = data;
-    
+
     // Set processFunctions as array format for JSONB
     if (processFunctions) {
       businessProcessData.processFunctions = processFunctions;
     }
-    
-    const businessProcess = await model.BusinessProcess.create(businessProcessData, {
-      transaction: t,
-    });
+
+    const businessProcess = await model.BusinessProcess.create(
+      businessProcessData,
+      {
+        transaction: t,
+      }
+    );
 
     // Create associations with LeadLocations
     if (leadLocations && leadLocations.length > 0) {
-      const leadLocationAssociations = leadLocations.map(loc => ({
+      const leadLocationAssociations = leadLocations.map((loc) => ({
         businessProcessId: businessProcess.id,
-        leadLocationId: loc.id
+        leadLocationId: loc.id,
       }));
-      
-      await model.BusinessProcessLeadLocation.bulkCreate(leadLocationAssociations, {
-        transaction: t,
-      });
+
+      await model.BusinessProcessLeadLocation.bulkCreate(
+        leadLocationAssociations,
+        {
+          transaction: t,
+        }
+      );
     }
 
     return businessProcess;
@@ -160,7 +172,7 @@ const getOne = async (id) => {
         model: model.LeadLocation,
         as: "leadLocations",
         attributes: ["id", "leadId", "addressId"],
-        through: { attributes: [] }
+        through: { attributes: [] },
       },
     ],
   });
@@ -170,17 +182,23 @@ const getOne = async (id) => {
   }
 
   // Get detailed process function information from masterdata
-  if (businessProcess.processFunctions && businessProcess.processFunctions.length > 0) {
-    const processFunctionDetails = await modelMasterdata.ProcessFunction.findAll({
-      attributes: { exclude: ["createdAt", "updatedAt"] },
-      where: {
-        id: {
-          [Op.in]: businessProcess.processFunctions.map((func) => func.id),
+  if (
+    businessProcess.processFunctions &&
+    businessProcess.processFunctions.length > 0
+  ) {
+    const processFunctionDetails =
+      await modelMasterdata.ProcessFunction.findAll({
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        where: {
+          id: {
+            [Op.in]: businessProcess.processFunctions.map((func) => func.id),
+          },
         },
-      },
-    });
-    
-    businessProcess.processFunctions = processFunctionDetails.map((r) => r.get({ plain: true }));
+      });
+
+    businessProcess.processFunctions = processFunctionDetails.map((r) =>
+      r.get({ plain: true })
+    );
   }
 
   return businessProcess;
@@ -207,13 +225,16 @@ const update = async (id, data) => {
   if (data.leadLocations && data.leadLocations.length > 0) {
     for (const leadLocation of data.leadLocations) {
       const leadLocationExists = await model.LeadLocation.findOne({
-        where: { 
+        where: {
           id: leadLocation.id,
-          leadId: leadIdToValidate 
-        }
+          leadId: leadIdToValidate,
+        },
       });
       if (!leadLocationExists) {
-        throw new ResponseError(404, `Lead location ${leadLocation.id} not found or doesn't belong to the specified lead`);
+        throw new ResponseError(
+          404,
+          `Lead location ${leadLocation.id} not found or doesn't belong to the specified lead`
+        );
       }
     }
   }
@@ -221,11 +242,15 @@ const update = async (id, data) => {
   // Validate ProcessFunctions exist
   if (data.processFunctions && data.processFunctions.length > 0) {
     for (const processFunction of data.processFunctions) {
-      const processFunctionExists = await modelMasterdata.ProcessFunction.findOne({
-        where: { id: processFunction.id }
-      });
+      const processFunctionExists =
+        await modelMasterdata.ProcessFunction.findOne({
+          where: { id: processFunction.id },
+        });
       if (!processFunctionExists) {
-        throw new ResponseError(404, `Process function ${processFunction.id} not found`);
+        throw new ResponseError(
+          404,
+          `Process function ${processFunction.id} not found`
+        );
       }
     }
   }
@@ -233,16 +258,19 @@ const update = async (id, data) => {
   return await model.sequelize.transaction(async (t) => {
     // Extract leadLocations and processFunctions before updating BusinessProcess
     const { leadLocations, processFunctions, ...businessProcessData } = data;
-    
+
     // Set processFunctions as array format for JSONB if provided
     if (processFunctions) {
       businessProcessData.processFunctions = processFunctions;
     }
 
-    const [affectedRows] = await model.BusinessProcess.update(businessProcessData, {
-      where: { id },
-      transaction: t,
-    });
+    const [affectedRows] = await model.BusinessProcess.update(
+      businessProcessData,
+      {
+        where: { id },
+        transaction: t,
+      }
+    );
 
     if (affectedRows === 0) {
       throw new ResponseError(
@@ -261,14 +289,17 @@ const update = async (id, data) => {
 
       // Create new associations
       if (leadLocations.length > 0) {
-        const leadLocationAssociations = leadLocations.map(loc => ({
+        const leadLocationAssociations = leadLocations.map((loc) => ({
           businessProcessId: id,
-          leadLocationId: loc.id
+          leadLocationId: loc.id,
         }));
-        
-        await model.BusinessProcessLeadLocation.bulkCreate(leadLocationAssociations, {
-          transaction: t,
-        });
+
+        await model.BusinessProcessLeadLocation.bulkCreate(
+          leadLocationAssociations,
+          {
+            transaction: t,
+          }
+        );
       }
     }
 

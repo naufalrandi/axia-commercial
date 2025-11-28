@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       consultancyId: DataTypes.UUID,
       consultancyProgramId: DataTypes.INTEGER,
+      consultants: DataTypes.JSONB,
       activities: DataTypes.JSONB,
       output: DataTypes.JSONB,
       estimateDuration: DataTypes.STRING,

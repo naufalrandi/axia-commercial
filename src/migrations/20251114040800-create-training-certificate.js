@@ -2,36 +2,37 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ConsulDeliverables", {
+    await queryInterface.createTable("TrainingCertificates", {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
       },
-      consultancyId: {
+      trainingId: {
         type: Sequelize.UUID,
       },
-      consultancyProgramId: {
+      trainingClassId: {
         type: Sequelize.INTEGER,
       },
-      consultants: {
-        type: Sequelize.JSONB,
+      createdById: {
+        type: Sequelize.INTEGER,
       },
-      activities: {
-        type: Sequelize.JSONB,
+      runningNumber: {
+        type: Sequelize.INTEGER,
       },
-      output: {
-        type: Sequelize.JSONB,
-      },
-      estimateDuration: {
+      code: {
         type: Sequelize.STRING,
       },
-      position: {
-        type: Sequelize.INTEGER,
+      fullname: {
+        type: Sequelize.STRING,
       },
-      month: {
-        type: Sequelize.INTEGER,
+      email: {
+        type: Sequelize.STRING,
+      },
+      active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
       },
       createdAt: {
         allowNull: false,
@@ -44,6 +45,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ConsulDeliverables");
+    await queryInterface.dropTable("TrainingCertificates");
   },
 };

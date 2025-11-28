@@ -71,7 +71,7 @@ const getAll = async (data) => {
         model: model.Inquiry,
         as: "inquiries",
         attributes: ["id", "code"],
-      }
+      },
     ],
     limit,
     offset,
@@ -209,4 +209,5 @@ module.exports = {
   update,
   destroy,
   destroyMany,
+  getLead,
 };

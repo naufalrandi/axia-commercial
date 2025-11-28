@@ -106,7 +106,7 @@ const destroyMany = async (req, res, next) => {
 
 const generateProposal = async (req, res, next) => {
   try {
-    const result = await inquiryService.generateProposal(req.params.id);
+    const result = await inquiryService.generateProposal(req.params.id, req.user.userId);
     res.status(200).json({
       status: "success",
       message: "Proposal generated successfully",

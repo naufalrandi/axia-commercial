@@ -7,6 +7,16 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "trainingId",
         as: "trainingClasses",
       });
+
+      Training.hasMany(models.TrainingCertificate, {
+        foreignKey: "trainingId",
+        as: "trainingCertificates",
+      });
+
+      Training.hasOne(models.Project, {
+        foreignKey: "trainingId",
+        as: "project",
+      });
     }
   }
   Training.init(

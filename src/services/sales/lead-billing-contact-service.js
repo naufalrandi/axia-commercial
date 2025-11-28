@@ -4,7 +4,6 @@ const modelAdminstrative = require("../../models/administrative/index");
 const {
   searchData,
   pagination,
-  getDataById,
   checkDataExists,
   enrichAddressWithMasterdata,
 } = require("../../helpers/func");
@@ -17,12 +16,27 @@ const {
   deleteLeadBillingContactManyValidation,
 } = require("../../validations/sales/lead-billing-contact-validation");
 
-const getData = async (id) => {
-  return await getDataById(
-    "LeadBillingContact",
-    id,
-    "Lead billing contact not found"
+const getLeadBillingContact = async (id) => {
+  const leadBillingContact = await model.LeadBillingContact.findOne({
+    where: { id },
+    include: [
+      {
+        model: model.Lead,
+        as: "lead",
+      },
+    ],
+  }).then((res) => res.get({ plain: true }));
+
+  if (!leadBillingContact) {
+    throw new ResponseError(404, "Lead billing contact not found");
+  }
+
+  leadBillingContact.address = await enrichAddressWithMasterdata(
+    leadBillingContact.addressId,
+    modelMasterdata
   );
+
+  return leadBillingContact;
 };
 
 const getAll = async (data) => {
@@ -84,33 +98,14 @@ const create = async (data) => {
 };
 
 const getOne = async (id) => {
-  const leadBillingContact = await model.LeadBillingContact.findOne({
-    where: { id },
-    include: [
-      {
-        model: model.Lead,
-        as: "lead",
-      },
-    ],
-  }).then((res) => res.get({ plain: true }));
-
-  if (!leadBillingContact) {
-    throw new ResponseError(404, "Lead billing contact not found");
-  }
-
-  leadBillingContact.address = await enrichAddressWithMasterdata(
-    leadBillingContact.addressId,
-    modelMasterdata
-  );
-
-  return leadBillingContact;
+  return await getLeadBillingContact(id);
 };
 
 const update = async (id, data) => {
   data.id = id;
   data = validate(updateLeadBillingContactValidation, data);
 
-  const existingLeadBillingContact = await getData(id);
+  const existingLeadBillingContact = await getLeadBillingContact(id);
 
   if (data.leadId) {
     const leadExists = await checkDataExists("Lead", { id: data.leadId });
@@ -145,7 +140,7 @@ const update = async (id, data) => {
 };
 
 const destroy = async (id) => {
-  await getData(id);
+  await getLeadBillingContact(id);
   return await model.LeadBillingContact.destroy({
     where: { id },
   });
@@ -169,4 +164,5 @@ module.exports = {
   update,
   destroy,
   destroyMany,
+  getLeadBillingContact,
 };

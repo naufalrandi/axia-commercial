@@ -1,0 +1,76 @@
+<html>
+  <head>
+    <style>
+      .container { font-family: Arial, sans-serif; padding: 20px; font-size:
+      .9em; line-height: 30px; } .header { text-align: center; background-color:
+      #4CAF50; padding: 10px; color: white; border-radius: 8px 8px 0 0; }
+      .content { padding: 20px; background-color: #fff; border-radius: 0 0 8px
+      8px; } .content p { margin: 10px 0; } .footer { text-align: center;
+      margin-top: 20px; font-size: 12px; color: #888; } .semi-bold {
+      font-weight: bold; } .text-base { font-size: 14px; } .margin-base {
+      margin: 20px 0; line-height: normal; }
+
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+      <div class="semi-bold">Dear {{client}},</div>
+      <div style="line-height: normal;">Following the verification of your
+        payment, please find attached the Payment Receipt of [Invoice Number]
+        for your records.
+      </div>
+
+      <div class="margin-base">
+        <div class="semi-bold" style="margin-bottom: 7px;">Invoice Details</div>
+        <table class="text-base" style="margin-left: -3px;">
+          <tr>
+            <td align="left" valign="top">Invoice Number</td>
+            <td align="left" valign="top">:</td>
+            <td align="left" valign="top">{{invoiceNumber}}</td>
+          </tr>
+          <tr>
+            <td align="left" valign="top">Date of Issue</td>
+            <td align="left" valign="top">:</td>
+            <td align="left" valign="top">{{issueDate}}</td>
+          </tr>
+          <tr>
+            <td align="left" valign="top">Amount Paid</td>
+            <td align="left" valign="top">:</td>
+            <td align="left" valign="top">{{amount}}</td>
+          </tr>
+          <tr>
+            <td align="left" valign="top">Payment Verified On</td>
+            <td align="left" valign="top">:</td>
+            <td align="left" valign="top">{{paidAt}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="margin-base">
+        This invoice serves as the official confirmation of your completed
+        transaction. Please retain it for your accounting and audit purposes.
+      </div>
+
+      <div class="margin-base">
+        We sincerely thank you for your timely payment and for your continued
+        trust in AXIA Group. We look forward to supporting you in our ongoing
+        collaboration.
+      </div>
+
+      <div class="margin-base">
+        Should you require any additional documentation or assistance, please
+        feel free to contact us at
+        {{email}}.
+      </div>
+
+      <hr style="width: 35px; margin: 50px 0 10px;" />
+
+      <div>
+        <div>Best regards,</div>
+        <div style="margin-bottom: -10px;">AXIA Group</div>
+        <div>Accounting Department</div>
+      </div>
+    </div>
+  </body>
+</html>

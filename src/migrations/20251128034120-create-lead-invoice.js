@@ -2,27 +2,18 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('TrainingClasses', {
+    await queryInterface.createTable('LeadInvoices', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      trainingId: {
+      leadId: {
         type: Sequelize.UUID
       },
-      class: {
-        type: Sequelize.INTEGER
-      },
-      deliveryMethod: {
-        type: Sequelize.STRING
-      },
-      startDate: {
-        type: Sequelize.DATE
-      },
-      endDate: {
-        type: Sequelize.DATE
+      invoiceId: {
+        type: Sequelize.UUID
       },
       createdAt: {
         allowNull: false,
@@ -35,6 +26,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('TrainingClasses');
+    await queryInterface.dropTable('LeadInvoices');
   }
 };

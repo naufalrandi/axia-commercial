@@ -2,36 +2,37 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ConsulDeliverables", {
+    await queryInterface.createTable("ActivityLogs", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      consultancyId: {
+      projectId: {
         type: Sequelize.UUID,
+        allowNull: false,
+        references: {
+          model: "Projects",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
       },
-      consultancyProgramId: {
-        type: Sequelize.INTEGER,
-      },
-      consultants: {
+      users: {
         type: Sequelize.JSONB,
       },
-      activities: {
+      consultancyPrograms: {
         type: Sequelize.JSONB,
       },
-      output: {
-        type: Sequelize.JSONB,
+      startDate: {
+        type: Sequelize.DATE,
       },
-      estimateDuration: {
-        type: Sequelize.STRING,
+      endDate: {
+        type: Sequelize.DATE,
       },
-      position: {
-        type: Sequelize.INTEGER,
-      },
-      month: {
-        type: Sequelize.INTEGER,
+      remarks: {
+        type: Sequelize.TEXT,
       },
       createdAt: {
         allowNull: false,
@@ -44,6 +45,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ConsulDeliverables");
+    await queryInterface.dropTable("ActivityLogs");
   },
 };

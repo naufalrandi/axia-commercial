@@ -91,6 +91,9 @@ module.exports = (sequelize, DataTypes) => {
           isBoolean: true,
         },
       },
+      purposeUseds: {
+        type: DataTypes.JSONB,
+      },
     },
     {
       sequelize,

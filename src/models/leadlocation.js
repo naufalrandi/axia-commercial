@@ -2,11 +2,6 @@
 const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class LeadLocation extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
       // define association here
       LeadLocation.belongsTo(models.Lead, {
@@ -16,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
 
       LeadLocation.belongsToMany(models.BusinessProcess, {
         through: models.BusinessProcessLeadLocation,
-        foreignKey: 'leadLocationId',
-        otherKey: 'businessProcessId',
-        as: 'businessProcesses'
+        foreignKey: "leadLocationId",
+        otherKey: "businessProcessId",
+        as: "businessProcesses",
       });
     }
   }
@@ -26,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       leadId: DataTypes.UUID,
       addressId: DataTypes.INTEGER,
+      primary: DataTypes.BOOLEAN,
     },
     {
       sequelize,

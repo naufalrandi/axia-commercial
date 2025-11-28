@@ -2,36 +2,39 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ConsulDeliverables", {
+    await queryInterface.createTable("Projects", {
       id: {
         allowNull: false,
-        autoIncrement: true,
         primaryKey: true,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.UUIDV4,
+      },
+      leadId: {
+        type: Sequelize.UUID,
+      },
+      serviceId: {
         type: Sequelize.INTEGER,
+      },
+      proposalId: {
+        type: Sequelize.UUID,
       },
       consultancyId: {
         type: Sequelize.UUID,
       },
-      consultancyProgramId: {
+      inquiryTrainingId: {
+        type: Sequelize.UUID,
+      },
+      trainingId: {
+        type: Sequelize.UUID,
+      },
+      runningNumber: {
         type: Sequelize.INTEGER,
       },
-      consultants: {
-        type: Sequelize.JSONB,
-      },
-      activities: {
-        type: Sequelize.JSONB,
-      },
-      output: {
-        type: Sequelize.JSONB,
-      },
-      estimateDuration: {
+      code: {
         type: Sequelize.STRING,
       },
-      position: {
-        type: Sequelize.INTEGER,
-      },
-      month: {
-        type: Sequelize.INTEGER,
+      status: {
+        type: Sequelize.STRING,
       },
       createdAt: {
         allowNull: false,
@@ -44,6 +47,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ConsulDeliverables");
+    await queryInterface.dropTable("Projects");
   },
 };
