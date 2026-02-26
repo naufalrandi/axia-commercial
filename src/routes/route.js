@@ -11,6 +11,11 @@ const teamRosterController = require("../controllers/sales/team-roster-controlle
 const activityLogController = require("../controllers/sales/activitylog-controller");
 const workorderController = require("../controllers/sales/workorder-controller");
 const leadInvoiceController = require("../controllers/sales/leadinvoice-controller");
+
+// Bypass
+const projectBypassController = require("../controllers/sales/project-bypass-controller");
+
+// Routes
 const express = require("express");
 const mainRoutes = express.Router();
 
@@ -90,6 +95,19 @@ mainRoutes.put("/projects/:id/training-certificates/:trainingCertificateId", aut
 mainRoutes.delete("/projects/:id/training-certificates/:trainingCertificateId", authMiddleware, projectController.deleteTrainingCertificate);
 mainRoutes.delete("/projects/:id/training-certificates", authMiddleware, projectController.deleteManyTrainingCertificate);
 mainRoutes.put("/projects/:id/training-classes", authMiddleware, projectController.updateTrainingClasses);
+
+// Project Bypass
+mainRoutes.get("/bypass/projects", authMiddleware, projectBypassController.getAll);
+mainRoutes.post("/bypass/projects", authMiddleware, projectBypassController.create);
+mainRoutes.post("/bypass/projects/import", authMiddleware, projectBypassController.importProject);
+mainRoutes.get("/bypass/projects/:id", authMiddleware, projectBypassController.getOne);
+mainRoutes.put("/bypass/projects/:id", authMiddleware, projectBypassController.update);
+mainRoutes.delete("/bypass/projects/:id", authMiddleware, projectBypassController.destroy);
+mainRoutes.post("/bypass/projects/:id/training/certificates", authMiddleware, projectBypassController.createTrainingCertificates);
+mainRoutes.put("/bypass/projects/:id/training/certificates/:trainingCertificateId", authMiddleware, projectBypassController.updateTrainingCertificate);
+mainRoutes.delete("/bypass/projects/:id/training/certificates/:trainingCertificateId", authMiddleware, projectBypassController.deleteTrainingCertificate);
+mainRoutes.get("/bypass/projects/:id/training/certificates/:hashCode/public", projectBypassController.getOneTrainingCertificatePublic);
+mainRoutes.post("/bypass/projects/:id/training/certificates/verify/public", projectBypassController.verifyTrainingCertificatePublic);
 
 // Team Roster
 mainRoutes.get("/projects/:id/team-rosters", authMiddleware, teamRosterController.getAll);

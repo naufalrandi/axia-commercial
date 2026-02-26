@@ -12,6 +12,9 @@ module.exports = {
       trainingId: {
         type: Sequelize.UUID,
       },
+      certificateId: {
+        type: Sequelize.UUID,
+      },
       trainingClassId: {
         type: Sequelize.INTEGER,
       },

@@ -90,16 +90,15 @@ function generateSlug(val) {
 }
 
 function searchData(fields, search) {
-  if (!Array.isArray(fields)) fields = [];
-  const result = {
-    [Op.or]: fields.map((item) => ({
-      [item]: {
+  if (!search || !fields?.length) return {};
+
+  return {
+    [Op.or]: fields.map((field) => ({
+      [field]: {
         [Op.iLike]: `%${search}%`,
       },
     })),
   };
-
-  return result;
 }
 
 async function getIdModel(modelName) {
@@ -125,6 +124,34 @@ function decryptData(encryptedData) {
     return null;
   }
 }
+
+function base64UrlEncode(base64) {
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlDecode(base64url) {
+  let base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  while (base64.length % 4 !== 0) {
+    base64 += "=";
+  }
+  return base64;
+}
+
+const encryptWithBase64 = (data) => {
+  const secretKey = process.env.TOKEN_KEY || "BismillahBerkah!!!";
+  const stringData = typeof data === "string" ? data : JSON.stringify(data);
+  const ciphertext = CryptoJS.AES.encrypt(stringData, secretKey).toString();
+  return base64UrlEncode(ciphertext);
+};
+
+const decryptWithBase64 = (encryptedText, typeData = "string") => {
+  const secretKey = process.env.TOKEN_KEY || "BismillahBerkah!!!";
+  const decoded = base64UrlDecode(encryptedText);
+  const bytes = CryptoJS.AES.decrypt(decoded, secretKey);
+
+  if (typeData === "string") return bytes.toString(CryptoJS.enc.Utf8);
+  return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+};
 
 function checkStatus(statuses, status, key = null) {
   if (!statuses.includes(status))
@@ -820,7 +847,7 @@ const getTrainingCourse = async (id) => {
     ],
   });
 
-  return trainingCourse.get({ plain: true });
+  return trainingCourse;
 };
 
 const generateTrainingCertificateCode = async (
@@ -848,6 +875,11 @@ const generateTrainingCertificateCode = async (
     runningNumber: runningNumber,
     code: `0044/${new Date().getFullYear()}/${training.code}/${runningNumber}`,
   };
+};
+
+const encryptTrainingCode = (data) => {
+  if (!data) return null;
+  return encryptWithBase64(data.code, process.env.JWT_SECRET || "BismillahBerkah!!!");
 };
 
 const createHistory = (currentHistories, label, additionalData = {}) => {
@@ -1063,6 +1095,8 @@ module.exports = {
   getIdModel,
   encryptData,
   decryptData,
+  encryptWithBase64,
+  decryptWithBase64,
   checkStatus,
   getDataById,
   checkDataExists,
@@ -1104,4 +1138,6 @@ module.exports = {
   getBankAccountByPurpose,
   getPrimaryLocation,
   sentInvoiceEmail,
+  encryptTrainingCode
 };
+console.log("loaded encrypt file");

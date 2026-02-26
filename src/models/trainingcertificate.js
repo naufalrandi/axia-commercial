@@ -1,14 +1,18 @@
 "use strict";
 const { Model } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   class TrainingCertificate extends Model {
-    /**
-     * Helper method for defining associations.
-     * This method is not a part of Sequelize lifecycle.
-     * The `models/index` file will call this method automatically.
-     */
     static associate(models) {
-      // define association here
+      TrainingCertificate.belongsTo(models.TrainingClass, {
+        as: "trainingClass",
+        foreignKey: "trainingClassId",
+      })
+
+      TrainingCertificate.belongsTo(models.Training, {
+        as: "training",
+        foreignKey: "trainingId",
+      })
     }
   }
   TrainingCertificate.init(
@@ -20,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       trainingId: DataTypes.UUID,
+      certificateId: DataTypes.UUID,
       trainingClassId: DataTypes.INTEGER,
       createdById: DataTypes.INTEGER,
       runningNumber: DataTypes.INTEGER,
@@ -27,6 +32,18 @@ module.exports = (sequelize, DataTypes) => {
       fullname: DataTypes.STRING,
       email: DataTypes.STRING,
       active: DataTypes.BOOLEAN,
+      hashCode: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          const { encryptTrainingCode } = require("../helpers/func");
+
+          const certificateId = this.getDataValue("certificateId");
+          if (certificateId) return certificateId;
+          
+          const code = this.getDataValue("code");
+          return encryptTrainingCode(code);
+        },
+      },
     },
     {
       sequelize,
