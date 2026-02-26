@@ -16,7 +16,7 @@ const createProjectValidation = Joi.object({
         startDate: Joi.date().required(),
         endDate: Joi.date().required(),
       })
-    ),
+    ).min(1).required(),
   }).optional().allow(null),
 });
 
@@ -39,7 +39,7 @@ const updateProjectValidation = Joi.object({
         startDate: Joi.date().required(),
         endDate: Joi.date().required(),
       })
-    ),
+    ).min(1).required(),
   }).optional().allow(null),
 });
 
