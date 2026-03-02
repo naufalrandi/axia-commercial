@@ -107,7 +107,7 @@ mainRoutes.post("/bypass/projects/:id/training/certificates", authMiddleware, pr
 mainRoutes.put("/bypass/projects/:id/training/certificates/:trainingCertificateId", authMiddleware, projectBypassController.updateTrainingCertificate);
 mainRoutes.delete("/bypass/projects/:id/training/certificates/:trainingCertificateId", authMiddleware, projectBypassController.deleteTrainingCertificate);
 mainRoutes.get("/bypass/projects/:id/training/certificates/:hashCode/public", projectBypassController.getOneTrainingCertificatePublic);
-mainRoutes.post("/bypass/projects/:id/training/certificates/verify/public", projectBypassController.verifyTrainingCertificatePublic);
+mainRoutes.post("/bypass/projects/training/certificates/verify/public", projectBypassController.verifyTrainingCertificatePublic);
 
 // Team Roster
 mainRoutes.get("/projects/:id/team-rosters", authMiddleware, teamRosterController.getAll);

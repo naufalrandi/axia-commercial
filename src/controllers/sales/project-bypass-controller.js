@@ -148,7 +148,7 @@ const getOneTrainingCertificatePublic = async (req, res, next) => {
 const verifyTrainingCertificatePublic = async (req, res, next) => {
   try {
     const code = req.body.code;
-    const result = await projectBypassService.verifyTrainingCertificatePublic(req.params.id, code);
+    const result = await projectBypassService.verifyTrainingCertificatePublic(code);
 
     res.status(200).json({
       success: true,

@@ -448,8 +448,7 @@ const getOneTrainingCertificatePublic = async (hashCode) => {
   return plainData;
 };
 
-const verifyTrainingCertificatePublic = async (id, code) => {
-  await getProject(id);
+const verifyTrainingCertificatePublic = async (code) => {
   const trainingCertificate = await model.TrainingCertificate.findOne({
     attributes: { exclude: ["createdAt", "updatedAt"] },
     where: { code },
