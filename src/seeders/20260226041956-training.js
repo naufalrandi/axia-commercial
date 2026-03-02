@@ -1,6 +1,8 @@
 'use strict';
 const { v4: uuidv4 } = require("uuid");
 const trainings = require("../data/training.json");
+const { PROJECT_STATUS } = require("../enum/utils");
+const { generateProjectCode } = require("../helpers/func");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -30,11 +32,15 @@ module.exports = {
       // =========================
       // INSERT PROJECT
       // =========================
+      const {code, runningNumber} = await generateProjectCode();
       await queryInterface.bulkInsert("Projects", [{
         id: uuidv4(),
+        code: code,
+        runningNumber: runningNumber,
         leadId: item.leadId,
         serviceId: item.serviceId,
         trainingId: trainingId,
+        status: PROJECT_STATUS.COMPLETED,
         createdAt: now,
         updatedAt: now
       }]);

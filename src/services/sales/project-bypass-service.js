@@ -13,9 +13,11 @@ const {
   encryptWithBase64,
   decryptWithBase64,
   getTrainingCourse,
+  generateProjectCode,
 } = require("../../helpers/func");
 const {
   SERVICES,
+  PROJECT_STATUS,
 } = require("../../enum/utils");
 const { createProjectValidation, updateProjectValidation, createTrainingCertificatestValidation, updateTrainingCertificatestValidation, importProjectValidation } = require("../../validations/sales/project-bypass-validation");
 const { v4: uuidv4, validate: uuidValidate } = require("uuid");
@@ -51,7 +53,9 @@ const getProject = async (id) => {
               {
                 model: model.TrainingCertificate,
                 as: "trainingCertificates",
-                raw: true
+                raw: true,
+                order: [["code", "ASC"]],
+                attributes: { exclude: ["createdAt", "updatedAt"] },
               }
             ]
           },
@@ -71,9 +75,7 @@ const getProject = async (id) => {
     where: { id: plainProject.serviceId },
     raw: true
   });
-  
-  console.log(plainProject.training.trainingCourseId);
-  
+    
   const trainingCourse = await getTrainingCourse(plainProject.training.trainingCourseId);
   plainProject.training.trainingCourse = trainingCourse;
   
@@ -157,6 +159,9 @@ const getAll = async (data) => {
         where: { id: plainProject.serviceId },
       });
 
+      const trainingCourse = await getTrainingCourse(plainProject.training.trainingCourseId);
+      
+      plainProject.training.trainingCourse = trainingCourse;
       plainProject.service = service ? service.get({ plain: true }) : null;
       return plainProject;
     })
@@ -173,10 +178,7 @@ const create = async (data) => {
   const service = await getService(data.serviceId);
 
   return await model.sequelize.transaction(async (transaction) => {
-    const projectPayload = {
-      leadId: data.leadId,
-      serviceId: data.serviceId,
-    };
+    const projectPayload = {};
 
     switch(service.name) {
       case SERVICES.TRAINING:
@@ -204,6 +206,13 @@ const create = async (data) => {
     }
 
     // Create project
+    const {code, runningNumber} = await generateProjectCode(transaction);
+
+    projectPayload.code = code;
+    projectPayload.runningNumber = runningNumber;
+    projectPayload.leadId = data.leadId;
+    projectPayload.serviceId = data.serviceId;
+    projectPayload.status = PROJECT_STATUS.COMPLETED;
     await model.Project.create(projectPayload, { transaction });
 
     return "Project created successfully";
