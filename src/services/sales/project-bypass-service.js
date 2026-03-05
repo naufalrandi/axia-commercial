@@ -455,7 +455,7 @@ const verifyTrainingCertificatePublic = async (code) => {
     where: { code },
   });
 
-  return trainingCertificate ? true : false;
+  return trainingCertificate.hashCode;
 };
 
 module.exports = {
