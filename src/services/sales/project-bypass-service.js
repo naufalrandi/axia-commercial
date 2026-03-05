@@ -14,6 +14,7 @@ const {
   decryptWithBase64,
   getTrainingCourse,
   generateProjectCode,
+  encryptData,
 } = require("../../helpers/func");
 const {
   SERVICES,
@@ -445,7 +446,7 @@ const getOneTrainingCertificatePublic = async (hashCode) => {
     plainData.training.trainingCourse = trainingCourse;
   }
 
-  return plainData;
+  return encryptData(plainData);
 };
 
 const verifyTrainingCertificatePublic = async (code) => {
