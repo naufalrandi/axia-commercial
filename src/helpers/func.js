@@ -850,6 +850,30 @@ const getTrainingCourse = async (id) => {
   return trainingCourse;
 };
 
+const getTrainingCourseByWhere = async (where) => {
+  const trainingCourse = await modelMasterdata.TrainingCourse.findOne({
+    where,
+    attributes: { exclude: ["createdAt", "updatedAt"] },
+    include: [
+      {
+        model: modelMasterdata.Standard,
+        as: "standards",
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+        through: { attributes: [] },
+        include: [
+          {
+            model: modelMasterdata.SchemeTag,
+            as: "schemeTag",
+            attributes: { exclude: ["createdAt", "updatedAt"] },
+          },
+        ],
+      },
+    ],
+  });
+
+  return trainingCourse;
+};
+
 const generateTrainingCertificateCode = async (
   trainingId,
   transaction = null
@@ -1129,6 +1153,7 @@ module.exports = {
   verifyVerification,
   generateProjectCode,
   getTrainingCourse,
+  getTrainingCourseByWhere,
   generateTrainingCertificateCode,
   createHistory,
   createComments,

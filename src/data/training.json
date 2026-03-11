@@ -2,7 +2,7 @@
   {
     "leadId": "4fe6cd0c-89ff-4bf8-a015-43d50c9471fa",
     "serviceId": 2,
-    "trainingCourseId": "43d33771-ab5e-485d-8cfc-c7ff4e066a15",
+    "trainingCourseCode": "72001",
     "runningNumber": 1,
     "code": "2091",
     "courseType": "PBLC",
@@ -52,7 +52,7 @@
   {
     "leadId": "19fef918-e036-4ffc-b868-0fa74b73fe75",
     "serviceId": 2,
-    "trainingCourseId": "b57e9892-0771-4933-85ef-e08121b4c213",
+    "trainingCourseCode": "72002",
     "runningNumber": 2,
     "code": "2092",
     "courseType": "IHT",

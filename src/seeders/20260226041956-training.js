@@ -2,7 +2,7 @@
 const { v4: uuidv4 } = require("uuid");
 const trainings = require("../data/training.json");
 const { PROJECT_STATUS } = require("../enum/utils");
-const { generateProjectCode } = require("../helpers/func");
+const { generateProjectCode, getTrainingCourseByWhere } = require("../helpers/func");
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -11,13 +11,14 @@ module.exports = {
 
     for (const item of trainings) {
       const trainingId = uuidv4();
+      const trainingCourse = await getTrainingCourseByWhere({ code: item.trainingCourseCode });
 
       // =========================
       // INSERT TRAINING
       // =========================
       await queryInterface.bulkInsert("Trainings", [{
         id: trainingId,
-        trainingCourseId: item.trainingCourseId,
+        trainingCourseId: trainingCourse?.id || null,
         inquiryTrainingId: null,
         runningNumber: item.runningNumber,
         code: item.code,
