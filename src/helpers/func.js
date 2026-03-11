@@ -847,31 +847,18 @@ const getTrainingCourse = async (id) => {
     ],
   });
 
-  return trainingCourse;
+  // Jika data ditemukan, ubah menjadi objek biasa
+  return trainingCourse ? trainingCourse.get({ plain: true }) : null;
 };
 
 const getTrainingCourseByWhere = async (where) => {
   const trainingCourse = await modelMasterdata.TrainingCourse.findOne({
     where,
     attributes: { exclude: ["createdAt", "updatedAt"] },
-    include: [
-      {
-        model: modelMasterdata.Standard,
-        as: "standards",
-        attributes: { exclude: ["createdAt", "updatedAt"] },
-        through: { attributes: [] },
-        include: [
-          {
-            model: modelMasterdata.SchemeTag,
-            as: "schemeTag",
-            attributes: { exclude: ["createdAt", "updatedAt"] },
-          },
-        ],
-      },
-    ],
   });
 
-  return trainingCourse;
+  // Jika data ditemukan, ubah menjadi objek biasa
+  return trainingCourse ? trainingCourse.get({ plain: true }) : null;
 };
 
 const generateTrainingCertificateCode = async (
