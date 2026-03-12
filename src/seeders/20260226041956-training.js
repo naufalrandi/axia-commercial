@@ -12,6 +12,9 @@ module.exports = {
     for (const item of trainings) {
       const trainingId = uuidv4();
       const trainingCourse = await getTrainingCourseByWhere({ code: item.trainingCourseCode });
+      // console.log(trainingCourse);
+      // throw new Error("stop");
+      
 
       // =========================
       // INSERT TRAINING

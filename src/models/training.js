@@ -1,6 +1,5 @@
 "use strict";
 const { Model } = require("sequelize");
-const { encryptTrainingCode } = require("../helpers/func");
 module.exports = (sequelize, DataTypes) => {
   class Training extends Model {
     static associate(models) {
