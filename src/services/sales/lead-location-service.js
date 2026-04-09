@@ -128,7 +128,10 @@ const update = async (id, data) => {
   data.id = id;
   data = validate(updateLeadLocationValidation, data);
 
-  await getData(id);
+  const leadLocation = await getData(id);
+  const address = await modelAdminstrative.Address.findOne({
+    where: { id: leadLocation.addressId },
+  });
 
   // Check if lead exists if leadId is being updated
   if (data.leadId) {
@@ -138,15 +141,16 @@ const update = async (id, data) => {
     }
   }
 
-  const [affectedRows] = await model.LeadLocation.update(data, {
-    where: { id },
-  });
-
-  if (affectedRows === 0) {
-    throw new ResponseError(404, "Lead location not found or no changes made");
+  if (address) {
+    await address.update(data.address);
+  } else {
+    const address = await modelAdminstrative.Address.create(data.address);
+    data.addressId = address.id;
   }
 
-  return await getOne(id);
+  return await model.LeadLocation.update(data, {
+    where: { id },
+  });
 };
 
 const destroy = async (id) => {

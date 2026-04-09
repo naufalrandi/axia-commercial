@@ -18,7 +18,6 @@ const updateLeadLocationValidation = Joi.object({
   id: Joi.number().integer().positive().required(),
   leadId: Joi.string().uuid().optional(),
   address: Joi.object({
-    id: Joi.number().integer().positive().required(),
     name: Joi.string().required(),
     addressLine: Joi.string().required(),
     villageId: Joi.number().integer().positive().required(),
