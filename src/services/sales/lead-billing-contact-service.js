@@ -85,16 +85,7 @@ const create = async (data) => {
     throw new ResponseError(404, "Lead not found");
   }
 
-  return await model.sequelize.transaction(async (t) => {
-    const address = await modelAdminstrative.Address.create(data.address);
-
-    data.addressId = address.id;
-    const result = await model.LeadBillingContact.create(data, {
-      transaction: t,
-    });
-
-    return result;
-  });
+  return await model.LeadBillingContact.create(data);
 };
 
 const getOne = async (id) => {
@@ -104,38 +95,17 @@ const getOne = async (id) => {
 const update = async (id, data) => {
   data.id = id;
   data = validate(updateLeadBillingContactValidation, data);
-
-  const existingLeadBillingContact = await getLeadBillingContact(id);
-
+  
   if (data.leadId) {
     const leadExists = await checkDataExists("Lead", { id: data.leadId });
     if (!leadExists) {
       throw new ResponseError(404, "Lead not found");
     }
   }
-
-  return await model.sequelize.transaction(async (t) => {
-    // Update address if provided
-    if (data.address) {
-      await modelAdminstrative.Address.update(data.address, {
-        where: { id: existingLeadBillingContact.addressId },
-      });
-      delete data.address; // Remove address from data as it's handled separately
-    }
-
-    const [affectedRows] = await model.LeadBillingContact.update(data, {
-      where: { id },
-      transaction: t,
-    });
-
-    if (affectedRows === 0) {
-      throw new ResponseError(
-        404,
-        "Lead billing contact not found or no changes made"
-      );
-    }
-
-    return await getOne(id);
+  
+  await getLeadBillingContact(id);
+  return await model.LeadBillingContact.update(data, {
+    where: { id },
   });
 };
 

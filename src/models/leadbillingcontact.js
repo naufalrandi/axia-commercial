@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
   LeadBillingContact.init(
     {
       leadId: DataTypes.UUID,
-      addressId: DataTypes.INTEGER,
+      designation: DataTypes.STRING,
       fullname: DataTypes.STRING,
       phoneNumber: DataTypes.STRING,
       email: DataTypes.STRING,
